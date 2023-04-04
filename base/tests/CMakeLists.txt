@@ -1,0 +1,5 @@
+link_libraries(muduo)
+
+add_executable(Timestamp_unittest Timestamp_unittest.cpp)
+add_executable(Exception_unittest Exception_unittest.cpp)
+add_executable(Thread_unittest Thread_unittest.cpp)
