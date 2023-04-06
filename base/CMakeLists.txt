@@ -2,6 +2,7 @@ set(MUDUO_BASE_SRCS
 	timeStamp.cpp
 	Exception.cpp
 	Thread.cpp
+	countDownLatch.cpp
 )
 
 add_library(muduo STATIC ${MUDUO_BASE_SRCS})
