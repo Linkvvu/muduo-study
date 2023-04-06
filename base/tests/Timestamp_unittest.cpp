@@ -20,7 +20,7 @@ void benchmark() {
     for (int i = 0; i < kNumber; ++i) {
         stamps.push_back(TimeStamp::now());
     }
-    printf("%s\n", stamps.front().toString().c_str());
+    printf("%s\n", stamps.front().toFormattedString().c_str());
     printf("%s\n", stamps.back().toString().c_str());
     printf("%f\n", timeDifference(stamps.back(), stamps.front()));
 

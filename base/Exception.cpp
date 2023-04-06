@@ -3,7 +3,7 @@
 #include <cxxabi.h>   // for abi::__cxa_demangle
 
 muduo::Exception::Exception(const std::string& what, bool demangle) : message_(what) {
-    fillStackTrace(demangle);
+    fillStackTrace(std::move(demangle));
 }
 
 void muduo::Exception::fillStackTrace(bool demangle) {
