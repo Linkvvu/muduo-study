@@ -1,3 +1,6 @@
+/**
+ * 该测试程序通过countdown_latch实现：所有的子线程等待主线程初始化完成后才开始运行
+*/
 #include <iostream>
 #include <string>
 #include <vector>
@@ -40,6 +43,7 @@ private:
     
 private:
     countDown_latch latch_;
+    // note: 由于muduo::Thread为noncopyable类型，其没有拷贝和移动构造函数，故不能直接存放在vector中
     std::vector<std::unique_ptr<Thread>> threads_;
 };
 
