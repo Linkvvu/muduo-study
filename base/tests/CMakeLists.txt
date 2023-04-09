@@ -1,7 +1,12 @@
 link_libraries(muduo)
 
+set(EXECUTABLE_OUTPUT_PATH ${CMAKE_CURRENT_SOURCE_DIR}/unit_tests)
+message(STATUS ${EXECUTABLE_OUTPUT_PATH})
 add_executable(Timestamp_unittest Timestamp_unittest.cpp)
 add_executable(Exception_unittest Exception_unittest.cpp)
 add_executable(Thread_unittest Thread_unittest.cpp)
 add_executable(countdownLatch_unittest1 countdownLatch_unittest1.cpp)
 add_executable(countdownLatch_unittest2 countdownLatch_unittest2.cpp)
+add_executable(blockingQueue_unittest blockingQueue_unittest.cpp)
+add_executable(blockingQueue-bench_unittest blockingQueue-Bench_unittest.cpp)
+add_executable(boundedBlockingQueue_unittest boundedBlockingQueue_unittest.cpp)

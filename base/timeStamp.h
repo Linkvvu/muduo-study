@@ -43,11 +43,10 @@ public:
         return static_cast<time_t>(microSecondsSinceEpoch_ / kMicroSecondsPerSecond);
     }
 
-    ///
-    /// Get time of now.
-    ///
+    /// @brief get time of now
+    /// @return time of now in microseconds
     static TimeStamp now();
-    static TimeStamp invaild() {
+    static TimeStamp invalid() {
         return TimeStamp();
     }
 
