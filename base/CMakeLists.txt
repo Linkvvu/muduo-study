@@ -3,6 +3,7 @@ set(MUDUO_BASE_SRCS
 	Exception.cpp
 	Thread.cpp
 	countDownLatch.cpp
+	threadpool.cpp
 )
 
 add_library(muduo STATIC ${MUDUO_BASE_SRCS})
