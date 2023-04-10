@@ -29,7 +29,7 @@ private:
     }
 
     static void destroy() {
-        delete(handle_);
+        delete handle_;
     }
 
 private:
