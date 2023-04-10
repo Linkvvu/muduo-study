@@ -30,7 +30,7 @@ void threadFunc() {
 }
 
 int main() {
-    muduo::singleton<Test>::destroy();
+    muduo::singleton<Test>::instance().setName("only one");
     muduo::Thread t1(threadFunc);
     t1.start();
     t1.join();

@@ -8,7 +8,7 @@
 namespace muduo {
     
 template <typename T>
-class singleton : boost::noncopyable {
+class singleton : private boost::noncopyable {
 public:
 	// when T is a incomplete type, compiling will occur error.
     static_assert(sizeof(T) > 0, "T must be a complete type");
@@ -21,7 +21,8 @@ public:
         pthread_once(&ponce_, []() { init(); });
         return *handle_;
     }
-
+    
+private:
     static void init() {
         handle_ = new T;
         ::atexit(destroy);
