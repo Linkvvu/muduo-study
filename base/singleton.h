@@ -10,6 +10,9 @@ namespace muduo {
 template <typename T>
 class singleton : boost::noncopyable {
 public:
+	// when T is a incomplete type, compiling will occur error.
+    static_assert(sizeof(T) > 0, "T must be a complete type");
+
     singleton() = delete;
     singleton(singleton&&) = delete;    
     singleton& operator=(singleton&&) = delete;
@@ -25,7 +28,6 @@ public:
     }
 
     static void destroy() {
-        static_assert(sizeof(T) > 0, "T must be a complete type");
         delete(handle_);
     }
 
@@ -33,6 +35,8 @@ private:
     static pthread_once_t ponce_;
     static T* handle_;
 };
+
+// define
 
 template <typename T>
 pthread_once_t singleton<T>::ponce_ = PTHREAD_ONCE_INIT;
