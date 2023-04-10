@@ -17,6 +17,7 @@ public:
     }
 
     ~threadLocal() {
+    // 删除TSD(thread-sepcific data)所绑定的key及其相关的数据结构(注意:不会导致"pthread_key_create"中的destructor的调用, 故"pthread_key_delete"一般应该被放在"pthread_key_create"中指定destructor中调用)
         pthread_key_delete(pkey_);
     }
 

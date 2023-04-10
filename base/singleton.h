@@ -25,7 +25,7 @@ public:
 private:
     static void init() {
         handle_ = new T;
-        ::atexit(destroy);
+        ::atexit(destroy); // 当"进程"正常终止时，以相反的顺序调用通过atexit()注册的函数
     }
 
     static void destroy() {
@@ -37,7 +37,7 @@ private:
     static T* handle_;
 };
 
-// define
+// define class static data
 
 template <typename T>
 pthread_once_t singleton<T>::ponce_ = PTHREAD_ONCE_INIT;
