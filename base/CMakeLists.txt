@@ -4,7 +4,11 @@ set(MUDUO_BASE_SRCS
 	Thread.cpp
 	countDownLatch.cpp
 	threadpool.cpp
+	logStream.cpp
 )
+
+find_package(Boost REQUIRED)
+find_library(BOOSTTEST_LIBRARY NAMES boost_unit_test_framework)
 
 add_library(muduo STATIC ${MUDUO_BASE_SRCS})
 target_link_libraries(muduo pthread)
