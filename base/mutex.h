@@ -22,7 +22,7 @@ public:
     }
 
     bool isLockedByCurrentThread() {
-        return holdThread_Id_ = currentThread::tid();
+        return holdThread_Id_ == currentThread::tid();
     }
 
     void assertLockedByThisThread() {
