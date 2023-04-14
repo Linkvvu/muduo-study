@@ -52,8 +52,8 @@ namespace muduo::currentThread {
     void cacheTid() {
         if (t_cachedTid == 0) {
             t_cachedTid = muduo::detail::gettid();
-            int n = snprintf(t_tidString, sizeof(t_tidString), "%5d", t_cachedTid);
-            assert(n < sizeof(currentThread::t_tidString));
+            int n = snprintf(t_tidString, sizeof(t_tidString), "%-5d", t_cachedTid);
+            assert(static_cast<unsigned long>(n) < sizeof(currentThread::t_tidString));
             (void)n; // 使用一下变量n, 防止release版本编译出现警告
         }
     }

@@ -34,6 +34,29 @@ void logStream::static_check() {
     static_assert(kMaxNumericSize  >= std::numeric_limits<int>::digits10+3);
 }
 
+#if nullptr // muduo库的实现
+const char digits[] = "9876543210123456789";
+const char* zero = digits + 9;
+static_assert(sizeof(digits) == 20, "failed");
+
+template <typename T>
+std::size_t convert(char destination[], T value) {
+    T v = value;
+    char* p = destination;
+    do {
+        int latest = static_cast<int>(v % 10);
+        v /= 10;
+        *p++ = zero[latest];
+    } while (v != 0);
+    if (value < 0) {
+        *p++ = '-';
+    }
+    *p = '\0';
+    std::reverse(destination, p);
+    return p-destination;
+}
+#endif
+
 logStream::self& logStream::operator<<(short v) {
     *this << static_cast<int>(v);
     return *this;
@@ -85,9 +108,11 @@ logStream::self& logStream::operator<<(double v) {
     return *this;
 }
 #else
+
 logStream::self& logStream::operator<<(double v) {
     if (buf_.free_size() >= kMaxNumericSize) {
-        int len = snprintf(buf_.current(), kMaxNumericSize, "%.15g", v);
+        // "%.*g": std::numeric_limits<double>::digits10:(digits10返回值为double类型10进制最大位数，不包含符号位和小数点)替换*，保证浮点数完整输出
+        int len = snprintf(buf_.current(), kMaxNumericSize, "%.*g", std::numeric_limits<double>::digits10, v);
         buf_.add(len);
     }
     return *this;

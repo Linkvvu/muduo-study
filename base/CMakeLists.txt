@@ -5,6 +5,8 @@ set(MUDUO_BASE_SRCS
 	countDownLatch.cpp
 	threadpool.cpp
 	logStream.cpp
+	logFile.cpp
+	logging.cpp
 )
 
 find_package(Boost REQUIRED)

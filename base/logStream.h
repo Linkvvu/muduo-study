@@ -18,7 +18,7 @@ public:
     ~fixed_buffer() = default;
     
     void append(const char* buf, std::size_t len) {
-        if (static_cast<std::size_t>(free_size() > len)) {
+        if (static_cast<std::size_t>(free_size()) > len) {
             memcpy(cur_, buf, len);
             cur_ += len;
         }

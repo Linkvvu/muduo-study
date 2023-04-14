@@ -14,6 +14,7 @@ add_executable(threadpool_unittest threadpool_unittest.cpp)
 add_executable(singleton_unittest singleton_unittest.cpp)
 add_executable(threadLocal_unittest threadLocal_unittest.cpp)
 add_executable(singletonThreadLocal_unittest singletonThreadLocal_unittest.cpp)
+add_executable(test test.cpp)
 
 if(BOOSTTEST_LIBRARY)
     add_executable(logStream_unittest logStream_unittest.cpp)
