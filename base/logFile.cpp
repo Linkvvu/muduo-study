@@ -11,20 +11,20 @@ class logFile::file {
 public:
     explicit file(const string& n)
         : ofs_(n, std::ios::app|std::ios::out)
-        , buffer_({})
+        , buffer_()
         , writen_(0) {
             assert(ofs_.is_open());
-            std::filebuf* underlying_buffer = ofs_.rdbuf(); // 获取当前输出文件流的底层缓冲区
-            underlying_buffer->pubsetbuf(buffer_, sizeof buffer_); // 设置底层缓冲区的大小
+            ofs_.rdbuf()->pubsetbuf(buffer_, sizeof buffer_); // 设置底层缓冲区机及大小
+                                                              // 若写入内容大于缓冲区大小，则ofstream对象会自动刷新缓冲区
         }
 
-    ~file() { 
+    ~file() {
         ofs_.flush();
         ofs_.close();
     }
 
     void append(const char* logline, const std::size_t len) {
-        ofs_.write(logline, len);
+        ofs_.write(logline, len);   // ofstream::write的实现中没有加锁，故非线程安全函数
         writen_ += len;
     }
 
@@ -52,15 +52,15 @@ logFile::logFile(const string& name, const std::size_t rollSize, bool thread_saf
     }
 
 void logFile::rollFile() {
-    string filename = getLogFileName(basename_);
-    time_t now = time(nullptr);
+    time_t now = std::chrono::system_clock::to_time_t(std::chrono::system_clock::now());
+    // string filename = getLogFileName(basename_);
     // 将当前时间戳调整为当天零点的时间戳，然后保存至start中
     // 例如:
     //      每20秒更换一个新文件写入，即kRollPerSeconds_ = 20
     //      当前时间戳为30， int start = 30/20*20;
     //      此时start就为20
     time_t start = now / kRollPerSeconds_ * kRollPerSeconds_;
-    if (now > lastRoll_) {
+    if (now > lastRoll_) { // 如果当前时间与上次滚动时间不是同一秒，则更换新的文件
         lastRoll_ = now;
         lastFlush_ = now;
         startOfPeriod_ = start;
@@ -105,7 +105,7 @@ std::string logFile::getLogFileName(const string& name) {
     auto std_now = std::chrono::system_clock::now();
     const time_t c_native_now = std::chrono::system_clock::to_time_t(std_now);
     tm now;
-    localtime_r(&c_native_now, &now);
+    localtime_r(&c_native_now, &now); // 获取本地时区时间(thread-safely)
     oss << name << std::put_time(&now, "%Y%m%d-%H%M%S") << ".log";
     return oss.str();
 }

@@ -1,6 +1,11 @@
 #if !defined(MUDUO_BASE_LOGFILE_H)
 #define MUDUO_BASE_LOGFILE_H
 
+// logFile feature:
+// 1.每新的一天自动更换日志文件
+// 2.当前文件大小超过用户指定的rollSize则滚动文件(即更换新文件)
+// 3.设置文件缓冲区，用户可指定每X秒刷新一次缓冲区
+
 #include <muduo/base/Types.h>
 #include <muduo/base/mutex.h>
 #include <boost/noncopyable.hpp>
@@ -24,7 +29,7 @@ private:
 
     int count_;                     // 当count大于kCheckTimesRoll_值时，并且当前为新的一天或到达了日志写入间隔时间，则刷新缓冲区
     std::unique_ptr<mutexLock> mutex_;
-    time_t startOfPeriod_;	        // 开始记录日志时间（调整至零点的时间）
+    time_t startOfPeriod_;	        // 上次开时记录日志的当天零点时间
     time_t lastRoll_;			    // 上一次滚动日志文件时间
     time_t lastFlush_;		        // 上一次日志写入文件时间
     std::unique_ptr<logFile::file> file_;
