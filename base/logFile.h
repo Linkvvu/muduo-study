@@ -18,6 +18,7 @@ class logFile : private boost::noncopyable {
 public:
     explicit logFile(const string& name, const std::size_t rollSize, bool thread_saftly = true, const int flush_interval = 3);
     ~logFile();
+    void flush();
     void rollFile();
     void append(const char* logline, int len);
     void append_impl(const char* logline, int len);

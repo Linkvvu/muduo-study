@@ -7,7 +7,8 @@
 
 namespace muduo {
 
-class logFile::file {
+// non thread-safely
+class logFile::file { // class logFile::file
 public:
     explicit file(const string& n)
         : ofs_(n, std::ios::app|std::ios::out)
@@ -35,7 +36,7 @@ private:
     std::ofstream ofs_;
     char buffer_[64*1024];
     std::size_t writen_;
-};
+}; // class logFile::file
 
 logFile::logFile(const string& name, const std::size_t rollSize, bool thread_saftly, const int flush_interval)
     : basename_(name)
@@ -53,7 +54,6 @@ logFile::logFile(const string& name, const std::size_t rollSize, bool thread_saf
 
 void logFile::rollFile() {
     time_t now = std::chrono::system_clock::to_time_t(std::chrono::system_clock::now());
-    // string filename = getLogFileName(basename_);
     // 将当前时间戳调整为当天零点的时间戳，然后保存至start中
     // 例如:
     //      每20秒更换一个新文件写入，即kRollPerSeconds_ = 20
@@ -79,11 +79,16 @@ void logFile::append(const char* logline, int len) {
     }
 }
 
+void logFile::flush() {
+    file_->flush();
+}
+
 void logFile::append_impl(const char* logline, int len) {
     file_->append(logline, len); // 向文件输入流缓冲区中写入数据
     if (file_->writen() > rollSize_) { // 若日志文件大小达到rollSize_，则换一个新文件
         rollFile();
     } else {
+        count_++;
         if (count_ > kCheckTimesRoll_) { // 如果写入次数大于kCheckTimesRoll_(最大写入次数)，则刷新流缓冲区
             time_t now = time(nullptr);
             time_t cur_period = now / kRollPerSeconds_ * kRollPerSeconds_;
@@ -93,9 +98,7 @@ void logFile::append_impl(const char* logline, int len) {
                 file_->flush();
                 lastFlush_ = now;
             }
-            count_ = 0;
-        } else {
-            count_++;
+            count_ = 0; // 重置count_，等待下一次检查
         }
     }
 }
