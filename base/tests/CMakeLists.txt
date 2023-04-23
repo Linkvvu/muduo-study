@@ -1,7 +1,7 @@
-link_libraries(muduo)
+link_libraries(muduo_base)
 
 set(EXECUTABLE_OUTPUT_PATH ${CMAKE_CURRENT_SOURCE_DIR}/unit_tests)
-message(STATUS ${EXECUTABLE_OUTPUT_PATH})
+
 add_executable(Timestamp_unittest Timestamp_unittest.cpp)
 add_executable(Exception_unittest Exception_unittest.cpp)
 add_executable(Thread_unittest Thread_unittest.cpp)
@@ -16,7 +16,6 @@ add_executable(threadLocal_unittest threadLocal_unittest.cpp)
 add_executable(singletonThreadLocal_unittest singletonThreadLocal_unittest.cpp)
 add_executable(logging_unittest logging_unittest.cpp)
 add_executable(logFile_unittest logFile_unittest.cpp)
-# add_executable(test test.cpp)
 
 if(BOOSTTEST_LIBRARY)
 	message(STATUS boost-test-ready)
