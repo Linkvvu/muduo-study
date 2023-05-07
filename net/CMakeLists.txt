@@ -3,6 +3,7 @@ set(MUDUO_NET_SRCS
     poller.cpp
     channel.cpp
     poller/pollPoller.cpp
+    poller/epollPoller.cpp
     poller/defaultPoller.cpp
 )
 
