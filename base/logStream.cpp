@@ -10,7 +10,10 @@ namespace detail {
         
 template <int SIZE>
 const char* fixed_buffer<SIZE>::debugString() {
-    *cur_ = '\0';
+    if (cur_ == data_ + SIZE)
+        data_[SIZE-1] = '\0';
+    else 
+        *cur_ = '\0';
     return data_;
 }
 
