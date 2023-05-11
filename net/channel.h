@@ -49,6 +49,7 @@ public:
     int fd() const { return fd_; }
     event_loop* ownerLoop() { return owning_loop_; }
     int events() const { return events_; }
+    int revents() const { return revents_; }
 
     void set_revents(int revt) { revents_ = revt; } // used by pollers
 
@@ -60,7 +61,7 @@ public:
     void remove();
 
     // for debug
-    string reventsToString() const;
+    string eventsToString(int events) const;
 
 private:
     void update();

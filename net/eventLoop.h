@@ -4,6 +4,7 @@
 #include <muduo/base/currentThread.h>
 #include <muduo/base/timeStamp.h>
 #include <boost/noncopyable.hpp>
+#include <muduo/net/callBacks.h>
 #include <unistd.h>
 #include <vector>
 #include <memory>
@@ -11,8 +12,10 @@
 namespace muduo {
 namespace net {
 
-class channel;  // forward declaration
-class poller;   // forward declaration
+class channel;      // forward declaration
+class poller;       // forward declaration
+class timer_id;     // forward declaration
+class timer_queue;  // forward declaration
 
 /// @brief Reactor, at most one per thread
 class event_loop : private boost::noncopyable {
@@ -46,6 +49,11 @@ public:
         }
     }
 
+    timer_id run_at(const TimeStamp& time, const timerCallback_t& func);
+    timer_id run_after(double delay, const timerCallback_t& func);
+    timer_id run_every(double interval, const timerCallback_t& func);
+    void cancel(timer_id t);
+
 private:
     void abort_for_not_in_holdThread();
     
@@ -61,6 +69,8 @@ private:
     std::unique_ptr<poller> poller_;    // 组合关系, 通过指针实现多态
     channelList_t activeChannles_;       // poller返回的活动通道
     channel* cur_activeChannel_;         // 当前正在处理的活动通道 
+
+    std::unique_ptr<timer_queue> timers_;
 }; 
 
 } // namespace net 

@@ -65,7 +65,7 @@ void epoll_poller::fill_activeChannels(int numReadyEvents, channelList_t* active
 
 void epoll_poller::updateChannel(channel* channel)  {
     poller::assert_loop_in_hold_thread();
-    LOG_TRACE << "fd: " << channel->fd() << " events: " << channel->events();
+    LOG_TRACE << "fd: " << channel->fd() << " events: " << channel->eventsToString(channel->events());
     const int state = channel->index();
     if (state == kNew || state == kDeleted) {   // a new one, add with EPOLL_CTL_ADD
         const fd_t fd = channel->fd();
@@ -107,6 +107,7 @@ void epoll_poller::removeChannel(channel* channel) {
         update(EPOLL_CTL_DEL, channel);
     }
     channel->set_index(kNew);   // because current channel has been remove from map, so It`s a new channel
+    LOG_TRACE << "fd: " << fd;
 }
 
 void epoll_poller::update(int operation, channel* const channel) {

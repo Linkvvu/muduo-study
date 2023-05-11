@@ -80,22 +80,24 @@ void channel::handle_event(TimeStamp recvTime) {
     }
 }
 
-string channel::reventsToString() const {
+string channel::eventsToString(int events) const {
     std::ostringstream oss;
-    oss << fd_ << ": ";
-    if (revents_ & POLLIN)
+    oss << "<fd " << fd_ << "> ";
+    if (events == 0)
+        return "nothing";
+    if (events & POLLIN)
         oss << "IN ";
-    if (revents_ & POLLPRI)
+    if (events & POLLPRI)
         oss << "PRI ";
-    if (revents_ & POLLOUT)
+    if (events & POLLOUT)
         oss << "OUT ";
-    if (revents_ & POLLHUP)
+    if (events & POLLHUP)
         oss << "HUP ";
-    if (revents_ & POLLRDHUP)
+    if (events & POLLRDHUP)
         oss << "RDHUP ";
-    if (revents_ & POLLERR)
+    if (events & POLLERR)
         oss << "ERR ";
-    if (revents_ & POLLNVAL)
+    if (events & POLLNVAL)
         oss << "NVAL ";
 
     return oss.str();

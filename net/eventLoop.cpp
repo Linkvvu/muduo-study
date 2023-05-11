@@ -2,6 +2,8 @@
 #include <muduo/net/channel.h>
 #include <muduo/net/poller.h>
 #include <muduo/base/logging.h>
+#include <muduo/net/timerId.h>
+#include <muduo/net/timerQueue.h>
 #include <poll.h>
 #include <cassert>
 
@@ -32,7 +34,8 @@ event_loop::event_loop()
     , pollReturn_timeStamp_()
     , poller_(poller::newDefaultPoller(this))
     , activeChannles_()
-    , cur_activeChannel_(nullptr) {
+    , cur_activeChannel_(nullptr)
+    , timers_(std::make_unique<timer_queue>(this)) {
         LOG_TRACE << "EventLoop created " << this << "in thread" << holdThreadId_;
         if (t_loopInThisThread != nullptr) {
             LOG_FATAL << "Anothrer event_loop object: " << t_loopInThisThread
@@ -77,7 +80,7 @@ void event_loop::loop() {
 
 void event_loop::printActiveChannels() const {
     for (channelList_t::const_iterator it = activeChannles_.begin(); it != activeChannles_.end(); it++) {
-        (*it)->reventsToString();
+        (*it)->eventsToString((*it)->revents());
     }
 }
 
@@ -94,6 +97,25 @@ void event_loop::updateChannel(channel* channel) {
 void event_loop::removeChannel(channel* channel) {
     poller_->removeChannel(channel);
 }
+
+timer_id event_loop::run_at(const TimeStamp& time, const timerCallback_t& func) {
+    return timers_->add_timer(time, 0.0, func);
+}
+
+timer_id event_loop::run_after(double delay, const timerCallback_t& func) {
+    TimeStamp target_point = addTime(TimeStamp::now(), delay);
+    return run_at(target_point, func);
+}
+
+timer_id event_loop::run_every(double interval, const timerCallback_t& func) {
+    TimeStamp target_point(addTime(TimeStamp::now(), interval));
+    return timers_->add_timer(target_point, interval, func);
+}
+
+void event_loop::cancel(timer_id t) {
+    timers_->cancel(t);
+}
+
 
 } // namespace net 
 } // namespace muduo

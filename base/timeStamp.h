@@ -17,7 +17,7 @@ public:
     ///
     /// Constucts a Timestamp at specific time
     ///
-    TimeStamp(const int64_t microSecondsSinceEpochArg) : microSecondsSinceEpoch_(microSecondsSinceEpochArg) {}
+    explicit TimeStamp(const int64_t microSecondsSinceEpochArg) : microSecondsSinceEpoch_(microSecondsSinceEpochArg) {}
 
     // default copy/assignment/dtor are Okay
 

@@ -5,6 +5,8 @@ set(MUDUO_NET_SRCS
     poller/pollPoller.cpp
     poller/epollPoller.cpp
     poller/defaultPoller.cpp
+    timer.cpp
+    timerQueue.cpp
 )
 
 add_library(muduo_net STATIC ${MUDUO_NET_SRCS})
@@ -14,6 +16,7 @@ install(TARGETS muduo_net DESTINATION lib)
 set(HEADERS
     channel.h
     eventLoop.h
+    timerId.h
 )
 install(FILES ${HEADERS} DESTINATION include/muduo/net)
 
