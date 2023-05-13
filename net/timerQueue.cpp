@@ -34,7 +34,7 @@ struct timespec how_much_time_from_now(TimeStamp when) {
         //   故会发生 timespec 为负数的情况！
         // how:
         //   当发生上述情况时，我们指定定时器下次过期是在1us后，这样 timerQueue 方可再次正常运行
-        LOG_ERROR << "in net::detail::reset_timerfd()" << " new expiration is a invalid value";
+        LOG_INFO << "in net::detail::reset_timerfd()" << " new expiration is a invalid value";
         ret.tv_sec = 0;
         ret.tv_nsec = 1000;
     }
@@ -84,7 +84,7 @@ timer_queue::~timer_queue() {
 
 timer_id timer_queue::add_timer(TimeStamp expir, double interval, timerCallback_t callBack) {
     timer* instance = new timer(expir, interval, callBack);
-    add_timer_inLoop(instance);
+    loop_->run_in_eventLoop([this, instance]() { this->add_timer_inLoop(instance); });
     return timer_id(instance, instance->sequence());
 }
 
@@ -183,7 +183,7 @@ void timer_queue::reset_timer() const {
 }
 
 void timer_queue::cancel(timer_id t_id) {
-    cancel_timer_inLoop(t_id.get_timer());
+    loop_->run_in_eventLoop([this, t_id]() mutable {this->cancel_timer_inLoop(t_id.get_timer());});
 }
 
 void timer_queue::cancel_timer_inLoop(timer* t) {

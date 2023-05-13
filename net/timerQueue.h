@@ -31,6 +31,7 @@ public:
     /// repeats if @c interval > 0.0.
     ///
     /// Must be thread safe. Usually be called from other threads.    
+    /// @brief set a timer to invoke target task
     timer_id add_timer(TimeStamp expir, double interval, timerCallback_t callBack);
     
     void cancel(timer_id t_id);

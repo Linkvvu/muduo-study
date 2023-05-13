@@ -2,6 +2,7 @@
 #if !defined(MUDUO_NET_TIMER_H)
 #define MUDUO_NET_TIMER_H
 #include <muduo/base/timeStamp.h>
+#include <muduo/base/logging.h>
 #include <muduo/net/callBacks.h>
 #include <boost/noncopyable.hpp>
 #include <atomic>
@@ -16,7 +17,14 @@ public:
     bool repeat() const { return repeat_; }
     TimeStamp expiration() const  { return expiration_; }
     uint64_t sequence() const { return sequence_; }
-    void run() const { callback_(); }
+
+    void run() const {
+        if (callback_) 
+            callback_();
+        else 
+            LOG_ERROR << "timer " << this << " have`t set callback!";
+    }
+
     void restart(TimeStamp now);    // 若当前定时器不是一次性的，则设置下次的过期时间
 
 public:

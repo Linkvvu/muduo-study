@@ -5,6 +5,7 @@
 #include <muduo/net/timerId.h>
 #include <muduo/net/timerQueue.h>
 #include <poll.h>
+#include <sys/eventfd.h>
 #include <cassert>
 
 using muduo::net::event_loop;
@@ -22,6 +23,18 @@ const int KPollTime_Ms = 10 * 1000;
 namespace muduo {
 namespace net {
 
+namespace detail {
+
+int create_eventFd() {
+    int fd = ::eventfd(0, EFD_CLOEXEC|EFD_NONBLOCK);
+    if (fd == -1) {
+        LOG_SYSFATAL << "fail to create event fd for wake up";
+    }
+    return fd;
+}
+
+} // namespace detail 
+
 event_loop* event_loop::getEventLoopOfCurrentThread() {
     return t_loopInThisThread;
 }
@@ -35,7 +48,12 @@ event_loop::event_loop()
     , poller_(poller::newDefaultPoller(this))
     , activeChannles_()
     , cur_activeChannel_(nullptr)
-    , timers_(std::make_unique<timer_queue>(this)) {
+    , timers_(std::make_unique<timer_queue>(this))
+    , wakeupFdChannel_(std::make_unique<channel>(this, detail::create_eventFd()))
+    , handlingPendingFunctors_(false)
+    , mutex_()
+    , pendingFunctorQueue_()
+    {
         LOG_TRACE << "EventLoop created " << this << "in thread" << holdThreadId_;
         if (t_loopInThisThread != nullptr) {
             LOG_FATAL << "Anothrer event_loop object: " << t_loopInThisThread
@@ -43,9 +61,17 @@ event_loop::event_loop()
         } else {
             t_loopInThisThread = this;
         }
+
+        wakeupFdChannel_->setReadCallback(std::bind(&event_loop::handle_wakeupFd_read, this));
+        wakeupFdChannel_->enableReading();
     }
 
 event_loop::~event_loop() {
+    LOG_DEBUG << "event_loop " << this << " of thread " << holdThreadId_
+        << " destructs in thread " << currentThread::tid();
+    wakeupFdChannel_->disableAllEvents();
+    wakeupFdChannel_->remove();
+    ::close(wakeupFdChannel_->fd());
     t_loopInThisThread = nullptr;
 }
 
@@ -73,6 +99,7 @@ void event_loop::loop() {
         }
         cur_activeChannel_ = nullptr;
         eventHandling_ = false;
+        handle_pendingFunctors();
     }
     LOG_TRACE << "event-loop: " << this << " stop looping";
     looping_ = false;
@@ -80,7 +107,7 @@ void event_loop::loop() {
 
 void event_loop::printActiveChannels() const {
     for (channelList_t::const_iterator it = activeChannles_.begin(); it != activeChannles_.end(); it++) {
-        (*it)->eventsToString((*it)->revents());
+        LOG_TRACE << "{ " << (*it)->eventsToString((*it)->revents()) << "}";
     }
 }
 
@@ -116,6 +143,57 @@ void event_loop::cancel(timer_id t) {
     timers_->cancel(t);
 }
 
+
+void event_loop::wakeup() {
+    uint64_t buffer = 1;
+    auto n = ::write(wakeupFdChannel_->fd(), &buffer, sizeof buffer);
+    if (n != sizeof buffer) {
+        LOG_ERROR << "event_loop::wakeup() writes " << n << " bytes instead of 8";
+    }
+}
+
+void event_loop::handle_wakeupFd_read() {
+    uint64_t buffer = 1;
+    ssize_t n = ::read(wakeupFdChannel_->fd(), &buffer, sizeof buffer);
+    if (n != sizeof buffer) {
+        LOG_ERROR << "event_loop::handleRead() reads " << n << " bytes instead of 8";
+    }
+}
+
+void event_loop::enqueue_eventLoop(const pendingCallback_t& func) {
+    {   // thread safe enqueue
+        muduo::mutexLock_guard locker(mutex_);
+        pendingFunctorQueue_.push_back(func);
+    }
+
+    // 1. 如果不在IO线程中，因为IO线程此时可能阻塞在poll中，为确保任务即使被处理，故要调用wakeup
+    // 2. 如果在IO线程中并且此时线程正在处理待决functors，由poll内部实现决定此时还需调用wakeup,防止IO线程阻塞
+    // 3. 如果在IO线程中且此时线程正在处理activeChannels的callback，则无需调用wakeup
+    if (!is_in_eventLoop_thread() || handlingPendingFunctors_) {
+        wakeup();
+    }
+}
+
+void event_loop::handle_pendingFunctors() {
+    std::vector<pendingCallback_t> tmpQueue;
+    handlingPendingFunctors_ = true;
+    {   // 缩短临界区大小
+        muduo::mutexLock_guard locker(mutex_);
+        tmpQueue.swap(pendingFunctorQueue_);    // Can effectively prevent deadlock
+    }
+    for (const pendingCallback_t& functor : tmpQueue) {
+        functor();
+    }
+    handlingPendingFunctors_ = false;
+}
+
+void event_loop::run_in_eventLoop(const pendingCallback_t& func) {
+    if (is_in_eventLoop_thread()) {
+        func();
+    } else {
+        enqueue_eventLoop(func);
+    }
+}
 
 } // namespace net 
 } // namespace muduo

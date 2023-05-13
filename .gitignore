@@ -5,3 +5,5 @@ build
 .vs
 
 unit_tests
+
+bin
