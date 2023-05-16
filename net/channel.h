@@ -24,8 +24,10 @@ public:
     using eventCallback = std::function<void()>;
     using read_eventCallback = std::function<void(TimeStamp)>;
 
-    channel(event_loop* loop, int fd);
+    channel(event_loop* loop, int fd, const char* friendly_name = nullptr);
     ~channel();
+
+    const char* friendly_name() { return friendly_name_; }
 
     /// Tie this channel to the owner object managed by shared_ptr,
     /// prevent the owner object being destroyed in handleEvent.
@@ -75,6 +77,7 @@ private:
 private:
     event_loop* const owning_loop_;   // 聚合关系(双向关联)，注册其所属event-loop
     const int fd_;
+    const char* friendly_name_;
     int        events_;		    // 关注的事件
     int        revents_;		// poll/epoll返回的事件
     int        index_;		    // used by Poller.表示在poll的事件数组中的序号

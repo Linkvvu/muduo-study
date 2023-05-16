@@ -65,7 +65,7 @@ void read_timerData(int timerfd, TimeStamp when) {
 timer_queue::timer_queue(event_loop* const loop)
     : loop_(loop)
     , timerfd_(net::detail::create_timerfd())
-    , timerChannel_(loop, timerfd_)
+    , timerChannel_(loop, timerfd_, "timer")
     , timers_()
     , activeTimers_() {
         timerChannel_.setReadCallback(std::bind(&timer_queue::handle_expiredTimers, this));
@@ -84,7 +84,7 @@ timer_queue::~timer_queue() {
 
 timer_id timer_queue::add_timer(TimeStamp expir, double interval, timerCallback_t callBack) {
     timer* instance = new timer(expir, interval, callBack);
-    loop_->run_in_eventLoop([this, instance]() { this->add_timer_inLoop(instance); });
+    loop_->run_in_eventLoop_thread([this, instance]() { this->add_timer_inLoop(instance); });
     return timer_id(instance, instance->sequence());
 }
 
@@ -183,7 +183,7 @@ void timer_queue::reset_timer() const {
 }
 
 void timer_queue::cancel(timer_id t_id) {
-    loop_->run_in_eventLoop([this, t_id]() mutable {this->cancel_timer_inLoop(t_id.get_timer());});
+    loop_->run_in_eventLoop_thread([this, t_id]() mutable {this->cancel_timer_inLoop(t_id.get_timer());});
 }
 
 void timer_queue::cancel_timer_inLoop(timer* t) {

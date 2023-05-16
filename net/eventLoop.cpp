@@ -49,7 +49,7 @@ event_loop::event_loop()
     , activeChannles_()
     , cur_activeChannel_(nullptr)
     , timers_(std::make_unique<timer_queue>(this))
-    , wakeupFdChannel_(std::make_unique<channel>(this, detail::create_eventFd()))
+    , wakeupFdChannel_(std::make_unique<channel>(this, detail::create_eventFd(), "wake-up"))
     , handlingPendingFunctors_(false)
     , mutex_()
     , pendingFunctorQueue_()
@@ -187,7 +187,7 @@ void event_loop::handle_pendingFunctors() {
     handlingPendingFunctors_ = false;
 }
 
-void event_loop::run_in_eventLoop(const pendingCallback_t& func) {
+void event_loop::run_in_eventLoop_thread(const pendingCallback_t& func) {
     if (is_in_eventLoop_thread()) {
         func();
     } else {

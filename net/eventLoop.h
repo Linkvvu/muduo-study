@@ -64,7 +64,7 @@ public:
 
     void enqueue_eventLoop(const pendingCallback_t& func);
     void handle_pendingFunctors();
-    void run_in_eventLoop(const pendingCallback_t& func);
+    void run_in_eventLoop_thread(const pendingCallback_t& func);
 
 private:
     void abort_for_not_in_holdThread();

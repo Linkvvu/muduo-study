@@ -17,7 +17,7 @@ void foo4();
 void foo1() {
     g_flag = 1;
     printf("foo1(): tid = %d, Flag = %d\n", tid(), g_flag);
-    g_loop->run_in_eventLoop(foo2);
+    g_loop->run_in_eventLoop_thread(foo2);
     g_flag = 2;
 }
 

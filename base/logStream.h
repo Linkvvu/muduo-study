@@ -77,7 +77,8 @@ public:
     }
 
     self& operator<<(const char* v) {
-        buf_.append(v, std::strlen(v));
+        if (v != nullptr)
+            buf_.append(v, std::strlen(v));
         return *this;
     }
 

@@ -11,9 +11,10 @@ const int channel::kNoneEvent = 0;
 const int channel::kReadEvent = POLLIN | POLLPRI;
 const int channel::kWriteEvent = POLLOUT;
 
-channel::channel(event_loop* loop, int fd)
+channel::channel(event_loop* loop, int fd, const char* friendly_name)
     : owning_loop_(loop)
     , fd_(fd)
+    , friendly_name_(friendly_name)
     , events_(kNoneEvent)
     , revents_(kNoneEvent)
     , index_(-1)
@@ -82,7 +83,7 @@ void channel::handle_event(TimeStamp recvTime) {
 
 string channel::eventsToString(int events) const {
     std::ostringstream oss;
-    oss << "<fd " << fd_ << "> ";
+    oss << "<fd " << fd_ << "(" << friendly_name_ << ")" "> ";
     if (events == 0)
         return "nothing";
     if (events & POLLIN)
