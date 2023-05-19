@@ -1,5 +1,6 @@
 #include <muduo/net/eventLoopThread.h>
 #include <muduo/net/eventLoop.h>
+#include <muduo/base/logging.h>
 
 namespace muduo {
 namespace net {
@@ -14,14 +15,10 @@ eventLoop_thread::eventLoop_thread(const initializeCallback_t& func, const strin
 
 eventLoop_thread::~eventLoop_thread() {
     exiting_ = true;
-    {
-        mutexLock_guard locker(mutex_);
-        if (loop_ != nullptr) {
-            loop_->quit();
-        }
-    }
-   
-    if (thread_.started()) {
+    // access variable loop_ not 100% race-free
+    // but when eventLoop_thread destructs, usually programming is exiting anyway.
+    if (loop_ != nullptr) {
+        loop_->quit();
         thread_.join();
     }
 }
@@ -53,8 +50,7 @@ void eventLoop_thread::threadFunc() {
 
     loop.loop();    // start the loop
 
-    mutexLock_guard locker(mutex_);
-    loop_ = nullptr;
+    return;
 }
 
 } // namespace net 
