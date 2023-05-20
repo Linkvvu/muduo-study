@@ -8,6 +8,9 @@ set(MUDUO_NET_SRCS
     timer.cpp
     timerQueue.cpp
     eventLoopThread.cpp
+    socketsOPs.cpp
+    inetAddress.cpp
+    socket.cpp
 )
 
 add_library(muduo_net STATIC ${MUDUO_NET_SRCS})
@@ -19,6 +22,7 @@ set(HEADERS
     eventLoop.h
     timerId.h
     eventLoopThread.h
+    endian.h
 )
 install(FILES ${HEADERS} DESTINATION include/muduo/net)
 

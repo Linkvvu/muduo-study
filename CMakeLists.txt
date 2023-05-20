@@ -9,6 +9,10 @@ add_compile_options("-Wall")
 
 include_directories(${CMAKE_CURRENT_SOURCE_DIR}/..)
 
+find_package(Boost REQUIRED)
+find_library(BOOSTTEST_LIBRARY NAMES boost_unit_test_framework)
+message(STATUS "boost_unittest_framework PATH: ${BOOSTTEST_LIBRARY}")
+
 add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/base)
 add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/net)
 

@@ -18,7 +18,6 @@ add_executable(logging_unittest logging_unittest.cpp)
 add_executable(logFile_unittest logFile_unittest.cpp)
 
 if(BOOSTTEST_LIBRARY)
-	message(STATUS boost-test-ready)
     add_executable(logStream_unittest logStream_unittest.cpp)
     target_link_libraries(logStream_unittest boost_unit_test_framework)
 endif(BOOSTTEST_LIBRARY)
