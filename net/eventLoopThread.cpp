@@ -17,9 +17,12 @@ eventLoop_thread::~eventLoop_thread() {
     exiting_ = true;
     // access variable loop_ not 100% race-free
     // but when eventLoop_thread destructs, usually programming is exiting anyway.
-    if (loop_ != nullptr) {
-        loop_->quit();
-        thread_.join();
+    {
+        mutexLock_guard locker(mutex_);
+        if (loop_ != nullptr) {
+            loop_->quit();
+            thread_.join();
+        }
     }
 }
 
@@ -44,6 +47,12 @@ void eventLoop_thread::threadFunc() {
 
     {
         mutexLock_guard locker(mutex_);
+        if (exiting_) {
+            LOG_ERROR << "eventLoop-thread is destructed";
+            cv_.notify_one();   // in this case: func "eventLoop_thread::start_loop" return nullptr 
+            return;
+        }
+
         loop_ = &loop;
         cv_.notify_one();
     }
