@@ -52,6 +52,8 @@ public:
     /// 
     void set_tcp_keepAlive(const bool on);
 
+    int fd() { return fd_; }
+
 private:
     const int fd_;
 };
