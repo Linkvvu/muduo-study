@@ -5,7 +5,6 @@
 #include <muduo/base/mutex.h>
 #include <muduo/base/Types.h>
 #include <muduo/base/condition_variable.h>
-#include <atomic>
 
 namespace muduo {
 namespace net {
@@ -24,7 +23,7 @@ private:
 private:
     Thread  thread_;    // IO thread
     event_loop* loop_;    // IO thread`s handle of event loop
-    std::atomic<bool> exiting_;
+    bool exiting_;
     mutexLock mutex_;
     condition_variable cv_; // cv for loop instance creation
     initializeCallback_t initFunc_; // 初始化函数

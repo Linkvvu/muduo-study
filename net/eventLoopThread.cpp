@@ -14,11 +14,14 @@ eventLoop_thread::eventLoop_thread(const initializeCallback_t& func, const strin
     , initFunc_(func) {}
 
 eventLoop_thread::~eventLoop_thread() {
-    exiting_ = true;
     // access variable loop_ not 100% race-free
     // but when eventLoop_thread destructs, usually programming is exiting anyway.
+
+    // now, I`s 100% race-free
     {
         mutexLock_guard locker(mutex_);
+
+        exiting_ = true;
         if (loop_ != nullptr) {
             loop_->quit();
             thread_.join();
