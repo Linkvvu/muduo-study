@@ -1,5 +1,5 @@
-#if !defined(MUDUO_NET_TCPSERVER_H)
-#define MUDUO_NET_TCPSERVER_H
+#if !defined(MUDUO_NET_EVENTLOOP_H)
+#define MUDUO_NET_EVENTLOOP_H
 
 #include <muduo/base/currentThread.h>
 #include <muduo/base/timeStamp.h>
@@ -94,4 +94,4 @@ private:
 } // namespace net 
 } // namespace muduo 
 
-#endif // MUDUO_NET_TCPSERVER_H
+#endif // MUDUO_NET_EVENTLOOP_H
