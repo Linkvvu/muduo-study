@@ -75,7 +75,7 @@ logger::logger(logger::sourceFile file, int line, LogLevel level, const char* fu
     }
 
 logger::logger(logger::sourceFile file, int line, bool whether_abort)
-    : impl_(new Impl(whether_abort ? FATAL : ERROR, ERROR, file, line)) {}
+    : impl_(new Impl(whether_abort ? FATAL : ERROR, errno, file, line)) {}
 
 
 logger::~logger() {
