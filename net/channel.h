@@ -24,7 +24,7 @@ public:
     using eventCallback = std::function<void()>;
     using read_eventCallback = std::function<void(TimeStamp)>;
 
-    channel(event_loop* loop, int fd, const char* friendly_name = nullptr);
+    channel(event_loop* loop, int fd, const char* friendly_name = "");
     ~channel();
 
     const char* friendly_name() { return friendly_name_; }

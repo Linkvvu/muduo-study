@@ -62,15 +62,17 @@ int accept(const int sockfd, struct ::sockaddr_in* addr) {
 
     if (connfd < 0) {
         int savedErrno = errno; // 由于下文的LOG_SYSERR中可能会调用系统调用，故可能会覆盖原先的错误码
-        LOG_SYSERR << "sockets::accept";
+        // LOG_SYSERR << "sockets::accept";
         switch (savedErrno) {
         case EAGAIN:
+            break;
         case ECONNABORTED:
         case EINTR:
         case EPROTO:
         case EPERM:
         case EMFILE:
             // expected errors
+            LOG_WARN << std::strerror(errno) << "sockets::accept";
             errno = savedErrno;
             break;
         case EBADF:
@@ -82,10 +84,10 @@ int accept(const int sockfd, struct ::sockaddr_in* addr) {
         case ENOTSOCK:
         case EOPNOTSUPP:
             // unexpected errors
-            LOG_FATAL << "unexpected error of ::accept " << savedErrno;
+            LOG_SYSFATAL << "unexpected error of ::accept " << savedErrno;
             break;
         default:
-            LOG_FATAL << "unknow erros of ::accept " << savedErrno;
+            LOG_SYSFATAL << "unknow erros of ::accept " << savedErrno;
             break;
         }
     }

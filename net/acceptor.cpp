@@ -30,9 +30,11 @@ acceptor::~acceptor() {
 
 void acceptor::listen() {
     loop_->assert_loop_in_hold_thread();
-    listening_ = true;
-    listenerSocket_.listen();
-    listenerChannel_.enableReading();
+    if (!listening_) {
+        listening_ = true;
+        listenerSocket_.listen();
+        listenerChannel_.enableReading();
+    }
 }
 
 void acceptor::handle_new_connection() {

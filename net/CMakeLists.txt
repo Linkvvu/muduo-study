@@ -12,6 +12,8 @@ set(MUDUO_NET_SRCS
     inetAddress.cpp
     socket.cpp
     acceptor.cpp
+    tcpConnection.cpp
+    tcpServer.cpp
 )
 
 add_library(muduo_net STATIC ${MUDUO_NET_SRCS})

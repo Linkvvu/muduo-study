@@ -5,6 +5,7 @@
 #include <muduo/net/socket.h>
 #include <boost/noncopyable.hpp>
 #include <functional>
+#include <atomic>
 
 namespace muduo {
 namespace net {
@@ -23,6 +24,8 @@ public:
 
     void listen();
 
+    bool listening() { return listening_; }
+
     void set_newConn_callback(const newConnCallback& func) { callback_ = func; }
 
     void handle_new_connection();
@@ -32,7 +35,7 @@ private:
     socket listenerSocket_;
     channel listenerChannel_;
     newConnCallback callback_;
-    bool listening_;
+    std::atomic<bool> listening_;
     int fd_placeholder_;
 };
 
