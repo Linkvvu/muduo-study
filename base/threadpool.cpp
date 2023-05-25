@@ -69,7 +69,7 @@ threadpool::Task threadpool::take() {
 
 void threadpool::runInThread() {
     try {
-        while (running_) {
+        while (running_ || !taskQueue_.empty()) {
             Task task(take());
             if (task.operator bool())
                 task();
