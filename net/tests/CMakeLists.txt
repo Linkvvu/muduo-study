@@ -9,6 +9,7 @@ add_executable(reactor_unittest4 reactor_unittest4.cpp)
 add_executable(reactor_unittest5 reactor_unittest5.cpp)
 add_executable(reactor_unittest6 reactor_unittest6.cpp)
 add_executable(reactor_unittest7 reactor_unittest7.cpp)
+add_executable(reactor_unittest8 reactor_unittest8.cpp)
 
 if(BOOSTTEST_LIBRARY)
     add_executable(inetAddress_unittest inetAddress_unittest.cpp)
