@@ -14,6 +14,8 @@ set(MUDUO_NET_SRCS
     acceptor.cpp
     tcpConnection.cpp
     tcpServer.cpp
+    eventLoop_threadPool.cpp
+    buffer.cpp
 )
 
 add_library(muduo_net STATIC ${MUDUO_NET_SRCS})
