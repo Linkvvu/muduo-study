@@ -5,7 +5,7 @@
 namespace muduo {
 namespace net {
 
-eventLoop_thread::eventLoop_thread(const initializeCallback_t& func, const string& thread_name)
+eventLoop_thread::eventLoop_thread(const IO_thread_initializeCallback_t& func, const string& thread_name)
     : thread_([this]() { this->threadFunc(); }, thread_name)
     , loop_(nullptr)
     , exiting_(false)

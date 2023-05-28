@@ -8,9 +8,13 @@ namespace muduo {
 namespace net {
 
 class tcp_connection;   // forward declaration
+class event_loop;       // forward declaration
 
 using timerCallback_t = std::function<void()>;
 using pendingCallback_t = std::function<void()>;
+
+// for eventloop-thread
+using IO_thread_initializeCallback_t =  std::function<void(event_loop*)>;
 
 // for tcp-server
 using onConnectionCallback_t = std::function<void(const std::shared_ptr<tcp_connection>&)>;

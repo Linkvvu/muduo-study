@@ -54,7 +54,7 @@ event_loop::event_loop()
     , mutex_()
     , pendingFunctorQueue_()
     {
-        LOG_TRACE << "EventLoop created " << this << "in thread" << holdThreadId_;
+        LOG_TRACE << "EventLoop created " << this << " in thread" << holdThreadId_;
         if (t_loopInThisThread != nullptr) {
             LOG_FATAL << "Anothrer event_loop object: " << t_loopInThisThread
                       << " exists in this thread: " << holdThreadId_; 

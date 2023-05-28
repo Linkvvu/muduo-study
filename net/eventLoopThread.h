@@ -5,6 +5,7 @@
 #include <muduo/base/mutex.h>
 #include <muduo/base/Types.h>
 #include <muduo/base/condition_variable.h>
+#include <muduo/net/callBacks.h>
 
 namespace muduo {
 namespace net {
@@ -13,10 +14,11 @@ class event_loop;   // forward declaration
 
 class eventLoop_thread : private boost::noncopyable {
 public:
-    using initializeCallback_t =  std::function<void(event_loop*)>;
-    eventLoop_thread(const initializeCallback_t& func = nullptr, const string& thread_name = nullptr);
+    eventLoop_thread(const IO_thread_initializeCallback_t& func = nullptr, const string& thread_name = nullptr);
     ~eventLoop_thread();
     event_loop* start_loop();
+    string name() const { return thread_.name(); }
+    
 private:
     void threadFunc();
 
@@ -26,7 +28,7 @@ private:
     bool exiting_;
     mutexLock mutex_;
     condition_variable cv_; // cv for loop instance creation
-    initializeCallback_t initFunc_; // 初始化函数
+    IO_thread_initializeCallback_t initFunc_; // 初始化函数
 };
 
 } // namespace net 
