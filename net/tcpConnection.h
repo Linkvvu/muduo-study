@@ -4,6 +4,7 @@
 #include <boost/noncopyable.hpp>
 #include <muduo/net/callBacks.h>
 #include <muduo/net/inetAddress.h>
+#include <muduo/net/buffer.h>
 #include <memory>
 
 namespace muduo {
@@ -37,11 +38,18 @@ public:
     const inet_address& get_local_addr() const { return localAddr_; }
     const inet_address& get_peer_addr() const { return peerAddr_; }
 
+    void send(const void* data, std::size_t len);
+    void send(buffer& data)
+    { send(data.retrieve_all_as_string()); }
+    void send(const std::string& data)
+    { send(data.c_str(), data.size()); }
+
 private:
     using tcp_connection_ptr = std::shared_ptr<tcp_connection>;
     void handle_read(TimeStamp recv_time);
     void handle_close();
     void handle_error();
+    void send_in_loop(const void* data, std::size_t len);
 
 private:
     event_loop* const loop_;                // belong to which event-loop
@@ -54,6 +62,9 @@ private:
     onMsgCallback_t onMsgCb_;
     onConnectionCallback_t onConnCb_;       // connect or close connection callback
     onCloseCallback_t onCloseCb_;
+
+    buffer input_buffer_;
+    buffer output_buffer_;
 };
 
 } // namespace net

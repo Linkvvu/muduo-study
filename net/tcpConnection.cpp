@@ -17,7 +17,9 @@ tcp_connection::tcp_connection(event_loop* const loop, const string& name, const
     , localAddr_(localAddr)
     , peerAddr_(peerAddr)
     , onMsgCb_(nullptr)
-    , onConnCb_(nullptr) {
+    , onConnCb_(nullptr)
+    , input_buffer_()
+    , output_buffer_() {
         connChannel_->setReadCallback(std::bind(&tcp_connection::handle_read, this, std::placeholders::_1));
     }
 
@@ -37,15 +39,16 @@ void tcp_connection::step_into_established() {
 
 void tcp_connection::handle_read(TimeStamp recv_time) {
     loop_->assert_loop_in_hold_thread();
-    char buf[1024 * 1000 * 5] = {0};
-    std::size_t n = sockets::read(connSocket_->fd(), buf, sizeof buf);
+    int save_error = 0;
+    auto n = input_buffer_.read_fd(connSocket_->fd(), &save_error);
     if (n > 0) {
         if (onMsgCb_)
-            onMsgCb_(shared_from_this(), buf, n);
+            onMsgCb_(shared_from_this(), &input_buffer_, recv_time);
     } else if (n == 0) {
         handle_close();    
     } else {
-
+        LOG_ERROR << "connection [" << name() << "]  occur a error: " << std::strerror(save_error);
+        handle_error();
     }
 }
 
@@ -66,4 +69,27 @@ void tcp_connection::connection_destroy() {
 
 void tcp_connection::handle_error() {
 
+}
+
+void tcp_connection::send(const void* data, std::size_t len) {
+    if (stage_ == stage::connected) {
+        if (loop_->is_in_eventLoop_thread()) {
+            send_in_loop(data, len);
+        } else {
+            string tmp(static_cast<const char*>(data), len);
+            loop_->enqueue_eventLoop([this, s = std::move(tmp)]() {
+                this->send_in_loop(s.data(), s.size());
+            });
+        }
+    }
+}
+
+void tcp_connection::send_in_loop(const void* data, std::size_t len) {
+    loop_->assert_loop_in_hold_thread();
+    auto n = sockets::write(connSocket_->fd(), data, len);
+    if (n < 0) {
+        abort();
+    } else {
+        LOG_DEBUG << "connection [" << this->name() << "] send " << n << "bytes to peer " << this->peerAddr_.ipAndPort();  
+    }
 }
