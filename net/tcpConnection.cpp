@@ -55,15 +55,21 @@ void tcp_connection::handle_read(TimeStamp recv_time) {
 void tcp_connection::handle_close() {
     loop_->assert_loop_in_hold_thread();
     assert(stage_ == stage::connected);
+    set_stage(stage::disconnected);
+    connChannel_->disableAllEvents();   // prevent poll trigger POLLOUT again
+
     tcp_connection_ptr guard = shared_from_this();
     onCloseCb_(guard);                  // invoke tcp_server::remove_connection
 }
 
 void tcp_connection::connection_destroy() {
     loop_->assert_loop_in_hold_thread();
-    stage_ = stage::disconnected;
+    // optimize: use CAS - compare and swap
+    if (stage_ == stage::connected) {
+        set_stage(stage::disconnected);
+        connChannel_->disableAllEvents();
+    }
     onConnCb_(shared_from_this());      // 即将断开连接, 调用应用层注册的回调函数
-    connChannel_->disableAllEvents();
     connChannel_->remove();
 }
 

@@ -41,6 +41,8 @@ private:
 
     void handle_newConnection(int sockfd, const inet_address& addr);
     void remove_connection(const std::shared_ptr<tcp_connection>& conn);
+    void remove_connection_in_loop(const std::shared_ptr<tcp_connection>& conn);
+    
 private:
     event_loop* const loop_;
     string serverName_;

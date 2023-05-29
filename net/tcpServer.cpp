@@ -61,11 +61,18 @@ void tcp_server::handle_newConnection(int sockfd, const inet_address& peer_addr)
 }
 
 void tcp_server::remove_connection(const std::shared_ptr<tcp_connection>& conn) {
-    conn->get_event_loop()->assert_loop_in_hold_thread();
-    auto ret = conns_.erase(conn->name());
-    assert(ret == 1);
+    loop_->run_in_eventLoop_thread([this, conn]() {
+        this->remove_connection_in_loop(conn);
+    });
+}
 
-    conn->get_event_loop()->enqueue_eventLoop([conn]() { conn->connection_destroy(); });    // shard_ptr count+1
+void tcp_server::remove_connection_in_loop(const std::shared_ptr<tcp_connection>& conn) {
+    loop_->assert_loop_in_hold_thread();
+    auto ret = conns_.erase(conn->name());  // It must invoke erase() in mainLoop thread, so no need to lock
+    assert(ret == 1);
+    conn->get_event_loop()->run_in_eventLoop_thread([conn]() {
+        conn->connection_destroy();
+    });
 }
 
 void tcp_server::start() {
