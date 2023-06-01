@@ -20,7 +20,7 @@ class channel;      // forward declaration
 class tcp_connection : private boost::noncopyable
                     , public std::enable_shared_from_this<tcp_connection> {
 public:
-    enum class stage { connecting, connected, disconnected };
+    enum class stage { connecting, connected, disconnected, disconnecting };
 
     explicit tcp_connection(event_loop* const loop, const string& name, const int sockfd, const inet_address& localAddr, const inet_address& peerAddr);
     ~tcp_connection();
@@ -29,6 +29,11 @@ public:
     void set_onClose_callback(const onCloseCallback_t& cb) { onCloseCb_ = cb; }
     void step_into_established();   // should be invoke once
     void connection_destroy();      // should be invoke once
+    void set_onWriteComplete_callback(const onWriteCompleteCallback_t& cb) { writeCompleteCb_ = cb; }
+    void set_onHighWaterMark_callback(const onHighWarterMarkCallback_t& cb, size_t mark) {
+        highWaterMarkCb_ = cb;
+        highWaterMark_ = mark;
+    }
 
     void set_stage(const stage s) { stage_ = s; } 
 
@@ -44,12 +49,18 @@ public:
     void send(const std::string& data)
     { send(data.c_str(), data.size()); }
 
+    void shutdown();
+
+    void set_tcp_noDelay(bool on = true);
+
 private:
     using tcp_connection_ptr = std::shared_ptr<tcp_connection>;
     void handle_read(TimeStamp recv_time);
     void handle_close();
     void handle_error();
+    void handle_write();
     void send_in_loop(const void* data, std::size_t len);
+    void shutdown_in_loop();
 
 private:
     event_loop* const loop_;                // belong to which event-loop
@@ -62,7 +73,9 @@ private:
     onMsgCallback_t onMsgCb_;
     onConnectionCallback_t onConnCb_;       // connect or close connection callback
     onCloseCallback_t onCloseCb_;
-
+    onWriteCompleteCallback_t writeCompleteCb_;     // Low-water mark
+    onHighWarterMarkCallback_t highWaterMarkCb_;    // high-water mark
+    size_t highWaterMark_;
     buffer input_buffer_;
     buffer output_buffer_;
 };

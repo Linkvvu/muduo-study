@@ -20,11 +20,12 @@ using pendingCallback_t = std::function<void()>;
 // for eventloop-thread
 using IO_thread_initializeCallback_t =  std::function<void(event_loop*)>;
 
-// for tcp-server
+// for tcp-server AND connection
 using onConnectionCallback_t = std::function<void(const std::shared_ptr<tcp_connection>&)>;
 using onMsgCallback_t = std::function<void(const std::shared_ptr<tcp_connection>&, buffer* msg, TimeStamp)>;
 using onCloseCallback_t = std::function<void(const std::shared_ptr<tcp_connection>&)>;
-
+using onWriteCompleteCallback_t = std::function<void(const std::shared_ptr<tcp_connection>&)>;
+using onHighWarterMarkCallback_t = std::function<void(const std::shared_ptr<tcp_connection>&, size_t)>;
 } // namespace net 
 } // namespace muduo
 #endif // MUDUO_NET_CALLBACKS_H

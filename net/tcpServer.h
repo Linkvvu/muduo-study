@@ -28,8 +28,14 @@ public:
 
     void set_onMessage_callback(const onMsgCallback_t& cb) { onMsgCb_ = cb; }
     void set_onConnection_callback(const onConnectionCallback_t& cb) { onConnCb_ = cb; }
+    void set_onWriteComplete_callback(const onWriteCompleteCallback_t& cb) { writeCompleteCb_ = cb; }
+    void set_onHighWaterMark_callback(const onHighWarterMarkCallback_t& cb, size_t mark) {
+        highWaterMarkCb_ = cb;
+        highWaterMark_ = mark;
+    }
     void set_IO_threadInit_callback(const IO_thread_initializeCallback_t& cb) { ioThreadCb_ = cb; }
     void set_IO_threadNum(int n) { assert(n >= 0); ioThreadNum_ = n; }
+    
     /// @brief server start listen
     /// @details be invoked across threads, thread safe.
     void start();
@@ -52,6 +58,9 @@ private:
     int ioThreadNum_;
     onMsgCallback_t onMsgCb_;
     onConnectionCallback_t onConnCb_;
+    onWriteCompleteCallback_t writeCompleteCb_;     // Low-water mark
+    onHighWarterMarkCallback_t highWaterMarkCb_;    // high-water mark
+    size_t highWaterMark_;
     IO_thread_initializeCallback_t ioThreadCb_;
     std::unique_ptr<eventLoop_threadPool> ioThreadPool_;
 

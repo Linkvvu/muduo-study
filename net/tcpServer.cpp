@@ -55,8 +55,9 @@ void tcp_server::handle_newConnection(int sockfd, const inet_address& peer_addr)
     conns_[conn_name] = new_conn;   // insert into connection list
     new_conn->set_onConnection_callback(onConnCb_);
     new_conn->set_onMessage_callback(onMsgCb_);
+    new_conn->set_onWriteComplete_callback(writeCompleteCb_);
+    new_conn->set_onHighWaterMark_callback(highWaterMarkCb_, highWaterMark_);
     new_conn->set_onClose_callback(std::bind(&tcp_server::remove_connection, this, std::placeholders::_1));
-
     this_time_loop->enqueue_eventLoop([new_conn]() { new_conn->step_into_established(); }); // shard_ptr count+1
 }
 

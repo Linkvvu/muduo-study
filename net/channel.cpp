@@ -45,7 +45,7 @@ void channel::remove() {
 
 void channel::handleEventWithGuard(TimeStamp recvTime) {
     eventHandling_ = true;
-    if ((revents_ & POLLHUP) && !(revents_ & POLLIN)) { // 对端挂起并且buf中没有数据可读了，则调用closeCallback
+    if ((revents_ & POLLHUP) && !(revents_ & POLLIN)) { // 对端请求断开事件为 POLLHUP | POLLIN，故此分支一般不可能为true
         if (logHup_) {
             LOG_WARN << "channel::hanle_event() POLLHUP";
         }

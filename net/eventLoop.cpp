@@ -15,7 +15,7 @@ namespace { // Global scope
 // 当前线程EventLoop对象指针
 // 线程局部存储
 __thread event_loop* t_loopInThisThread = nullptr;
-const int KPollTime_Ms = 10 * 1000;
+const int KPollTime_Ms = 100 * 1000;
 
 } // Global scope
 
@@ -155,6 +155,7 @@ void event_loop::wakeup() {
 void event_loop::handle_wakeupFd_read() {
     uint64_t buffer = 1;
     ssize_t n = ::read(wakeupFdChannel_->fd(), &buffer, sizeof buffer);
+    LOG_TRACE << "fd" << wakeupFdChannel_->fd() << "(" << wakeupFdChannel_->friendly_name() << "): " << buffer;
     if (n != sizeof buffer) {
         LOG_ERROR << "event_loop::handleRead() reads " << n << " bytes instead of 8";
     }
