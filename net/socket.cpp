@@ -1,13 +1,16 @@
 #include <muduo/net/socket.h>
 #include <muduo/net/socketsOPs.h>
 #include <muduo/net/inetAddress.h>
+#include <muduo/base/logging.h>
 #include <netinet/tcp.h>    // for TCP_NODELAY
 
 using namespace muduo;
 using namespace muduo::net;
 
 socket::~socket() {
-    sockets::close(fd_);
+    if (sockets::close(fd_)) {
+        LOG_DEBUG << "file descriptor " << fd_ << " is closed";
+    }
 }
 
 void socket::bind_address(const inet_address& localAddr) {

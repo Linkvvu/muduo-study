@@ -114,10 +114,12 @@ ssize_t writev(const int sockefd, const struct ::iovec* iov, int count) {
     return ::writev(sockefd, iov, count);
 }
 
-void close(const int fd) {
+bool close(const int fd) {
     if (::close(fd) != 0) {
         LOG_SYSERR << "sockets::close";
+        return false;
     }
+    return true;
 }
 
 void shutdown_w(const int fd) {
@@ -174,6 +176,20 @@ struct ::sockaddr_in get_peer_addr(int sockfd) {
         LOG_SYSERR << "sockets::get_peer_addr";
     }
     return remoteAddr;
+}
+
+// 自连接是指(sourceIP, sourcePort) = (destIP, destPort)
+// 自连接发生的原因:
+// 客户端在发起connect的时候，没有bind(2)
+// 客户端与服务器端在同一台机器，即sourceIP = destIP，
+// 服务器尚未开启，即服务器还没有在destPort端口上处于监听
+// 客户端由于没有bind(3),故操作系统分配给客户端的IP+Port可能会与目标服务器的IP+Port相同,从而导致自连接
+// 此时由于自连接，客户端已经占用了服务器的IP+Port
+// 这种情况下，服务器也无法启动了
+bool is_self_connect(int sockfd) {
+    auto laddr = sockets::get_local_addr(sockfd);
+    auto raddr = sockets::get_peer_addr(sockfd);
+    return laddr.sin_family == raddr.sin_family && laddr.sin_port == raddr.sin_port && laddr.sin_addr.s_addr == raddr.sin_addr.s_addr;
 }
 
 } // namespace sockets 

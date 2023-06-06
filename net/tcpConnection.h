@@ -20,6 +20,7 @@ class channel;      // forward declaration
 class tcp_connection : private boost::noncopyable
                     , public std::enable_shared_from_this<tcp_connection> {
 public:
+    using tcp_connection_ptr = std::shared_ptr<tcp_connection>;
     enum class stage { connecting, connected, disconnected, disconnecting };
 
     explicit tcp_connection(event_loop* const loop, const string& name, const int sockfd, const inet_address& localAddr, const inet_address& peerAddr);
@@ -54,7 +55,6 @@ public:
     void set_tcp_noDelay(bool on = true);
 
 private:
-    using tcp_connection_ptr = std::shared_ptr<tcp_connection>;
     void handle_read(TimeStamp recv_time);
     void handle_close();
     void handle_error();

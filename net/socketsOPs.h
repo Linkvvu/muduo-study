@@ -19,7 +19,7 @@ extern ssize_t read(const int sockfd, void* buf, std::size_t count);
 extern ssize_t readv(const int sockfd, const struct ::iovec* iov, int count);
 extern ssize_t write(const int sockfd, const void* buf, std::size_t count);
 extern ssize_t writev(const int sockefd, const struct ::iovec* iov, int count);
-extern void close(const int fd);
+extern bool close(const int fd);
 extern void shutdown_w(const int fd);
 extern void to_format_ipAndPort(char* buf, std::size_t size, const struct ::sockaddr_in* addr);
 extern void to_format_ip(char* buf, std::size_t size, const struct ::sockaddr_in* addr);
@@ -27,6 +27,7 @@ extern sockaddr_in from_ipAndPort(const char* ip, const uint16_t port);
 extern int get_socket_error(int sockfd);
 extern sockaddr_in get_local_addr(int sockfd);
 extern sockaddr_in get_peer_addr(int sockfd);
+extern bool is_self_connect(int sockfd);
 
 } // namespace sockets 
 } // namespace net 
