@@ -36,7 +36,7 @@ void tcp_connection::step_into_established() {
 
     assert(stage_ == stage::connecting);
     stage_ = stage::connected;      // 步入连接建立阶段
-    connChannel_->tie(shared_from_this());
+    connChannel_->tie(shared_from_this());  // tie(ptr)是为了确保该channel的生命周期，又因为该channel是tcp_connection对象的成员，故该channel的生命周期等于当前tcp_connection对象的生命周期，因此需要确保tcp_connection在合适的时机销毁
     connChannel_->enableReading();  // 将当前tcp连接所对应的通道加入至event-loop(poller)中
     onConnCb_(shared_from_this());  // 连接成功, 调用应用层注册的回调函数
 }
@@ -143,7 +143,11 @@ void tcp_connection::send_in_loop(const void* data, std::size_t len) {
 
 void tcp_connection::handle_write() {
     loop_->assert_loop_in_hold_thread();
-    assert(stage_ == stage::connected || stage_ == stage::disconnecting);
+    if (stage_ != stage::connected && stage_ != stage::disconnecting) {
+        LOG_WARN << "tcp-connection[" << name() << "] current stage is disconnected, do nothing.";
+        return;
+    }
+
     if (connChannel_->isWriting()) {
         ssize_t n = sockets::write(connChannel_->fd(), output_buffer_.peek(), output_buffer_.readable_bytes());
         if (n > 0) {

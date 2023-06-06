@@ -21,7 +21,7 @@ connector::connector(event_loop* const loop, const inet_address& raddr, const ne
     }
 
 connector::~connector() {
-    assert(!helperChannel_.operator bool());
+    assert(helperChannel_.operator bool() == false);
 }
 
 void connector::start_connect() {
@@ -33,7 +33,7 @@ void connector::start_connect() {
 
 void connector::start_connect_in_loop() {
     loop_->assert_loop_in_hold_thread();
-    assert(stage_ == stage::disconnected);  // maybe should use 'if' judge
+    assert(stage_ == stage::disconnected);  // maybe should use 'if' key-word
     if (isConnect_) {
         connect();
     } else {
@@ -59,7 +59,7 @@ void connector::connect() {
     case ECONNRESET:    // server 全连接队列已满
     case EADDRNOTAVAIL: // 指定的地址在本机不可用
     case ECONNREFUSED:  // 没有到该网络的路由
-        // retry();
+        retry(sockfd);
         break;
 
     case EACCES:        // Write access to the specified socket is denied.
@@ -111,7 +111,9 @@ void connector::handle_write() {
             }
         }
     } else {
-        assert(stage_ == stage::disconnected);  // 可能调用完connector::start_connect后立刻又调用了connector::stop
+        // 可能调用完connector::start_connect后立刻又调用了connector::stop
+        // 或是当POLLERR被触发时调用了connector::handle_error，至使stage_ == stage::disconnected
+        assert(stage_ == stage::disconnected);      
     }
 }
 
@@ -131,12 +133,12 @@ void connector::retry(int sockfd) {
 void connector::handle_error() {
     loop_->assert_loop_in_hold_thread();
 
-    assert(stage_ == stage::connecting);
-    int sockfd = remove_and_resetChannel();
-    int saved_error = sockets::get_socket_error(sockfd);
-    sockets::close(sockfd);
-    LOG_ERROR << "SO_ERROR = " << saved_error << " " << std::strerror(saved_error) << " - connector::handle_error";
-    stage_ = stage::disconnected;
+    if (stage_ == stage::connecting) {
+        int sockfd = remove_and_resetChannel();
+        int saved_error = sockets::get_socket_error(sockfd);
+        LOG_ERROR << "SO_ERROR = " << saved_error << " " << std::strerror(saved_error) << " - connector::handle_error";
+        retry(sockfd);
+    }
 }
 
 int connector::remove_and_resetChannel() { // called by connector::handle_write OR connector::handle_error OR connector::stop_connect_in_loop
