@@ -9,6 +9,7 @@
 
 namespace muduo {
 
+
 class logger {
     // for build file-baseName
     class sourceFile { // class logger::sourceFile
@@ -78,6 +79,8 @@ private:
 #define LOG_SYSFATAL muduo::logger(__FILE__, __LINE__, true).stream()
 
 extern logger::LogLevel g_logLevel;
+
+extern void set_log_level(const logger::LogLevel level);
 
 inline logger::LogLevel logger::logLevel() {
     return g_logLevel;

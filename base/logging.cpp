@@ -20,6 +20,10 @@ logger::LogLevel initLogLevel() {
 
 logger::LogLevel g_logLevel = initLogLevel(); // define program log level
 
+void set_log_level(const logger::LogLevel level) {
+    g_logLevel = level;
+}
+
 class logger::Impl {
 public:
     using logLevel = logger::LogLevel;
