@@ -45,6 +45,8 @@ public:
         std::swap(writeIndex_, another.writeIndex_);
     }
 
+    /// @brief search position of "\r\n"
+    /// @return if success return a pointer to position of "\r", otherwise return NULL
     const char* find_CRLF() const {
         const char* res = std::search(peek(), beginWrite(), KCRLF, KCRLF + 2);
         return res == beginWrite() ? nullptr : res;

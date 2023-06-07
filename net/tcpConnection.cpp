@@ -153,14 +153,15 @@ void tcp_connection::handle_write() {
         if (n > 0) {
             output_buffer_.retrieve(static_cast<std::size_t>(n));
             if (output_buffer_.readable_bytes() == 0) {
+                connChannel_->disableWriting(); // 取消关注write event
                 if (writeCompleteCb_)
-                    writeCompleteCb_(shared_from_this());
+                    writeCompleteCb_(shared_from_this());   // FIXME: priority call shutdown_in_loop()
                 if (stage_ == stage::disconnecting) {
                     shutdown_in_loop();
                 }
             }
         } else {    // n == 0: kernel buffer full
-            LOG_SYSERR << "connection [" << name() << "]  occur a error";
+            LOG_ERROR << "connection [" << name() << "]  occur a error";
         }
     } else {
         LOG_TRACE << "connection fd = " << connChannel_->fd() << " is down, no more writing";
