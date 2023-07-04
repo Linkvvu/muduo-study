@@ -4,6 +4,7 @@ project(muduo-study)
 
 set(CMAKE_BUILD_TYPE "Debug")
 set(UNIX_API_TEST on)
+set(BUILD_EXAMPLES on)
 
 add_compile_options("-Wall")
 
@@ -19,3 +20,8 @@ add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/net)
 if(UNIX_API_TEST)
     add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/UNIX-API_examples)
 endif(UNIX_API_TEST)
+
+if(BUILD_EXAMPLES)
+    add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/examples)
+endif(BUILD_EXAMPLES)
+
