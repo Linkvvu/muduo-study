@@ -7,11 +7,18 @@ include_directories(${CMAKE_SOURCE_DIR})
 set(
     MUDUO_NET
     EventLoop.cpp
+    Poller.cpp
+    Channel.cpp
+    poller/PollPoller.cpp
+    Timer.cpp
+    TimerQueue.cpp
+    logger.cpp
 )
 
-if(UNIT_TEST)
-    add_subdirectory(${CMAKE_SOURCE_DIR}/unitTest)
-endif(UNIT_TEST)
+set(UNIT_TEST ON)
 
+if(UNIT_TEST)
+    add_subdirectory(${CMAKE_SOURCE_DIR}/tests)
+endif(UNIT_TEST)
 
 add_library(muduoNet ${MUDUO_NET})
