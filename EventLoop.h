@@ -56,8 +56,8 @@ public:
     void RemoveChannel(Channel* c);
 
     TimerId_t RunAt(const TimePoint_t& when, const TimeoutCb_t& cb);
-    TimerId_t RunAfter(const TimeoutDuration_t& delay, const TimeoutCb_t& cb);
-    TimerId_t RunEvery(const TimeoutDuration_t interval, const TimeoutCb_t& cb);
+    TimerId_t RunAfter(const Interval_t& delay, const TimeoutCb_t& cb);
+    TimerId_t RunEvery(const Interval_t& interval, const TimeoutCb_t& cb);
     void cancelTimer(const TimerId_t timerId);
 
 public:

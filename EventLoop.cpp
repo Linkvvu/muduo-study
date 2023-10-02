@@ -86,13 +86,13 @@ TimerId_t EventLoop::RunAt(const TimePoint_t& when, const TimeoutCb_t& cb) {
     return timerQueue_->AddTimer(when, TimeoutDuration_t::zero(), cb);
 }
 
-TimerId_t EventLoop::RunAfter(const TimeoutDuration_t& delay_ms, const TimeoutCb_t& cb) {
+TimerId_t EventLoop::RunAfter(const Interval_t& delay_ms, const TimeoutCb_t& cb) {
     using namespace std;
     auto timepoint = chrono::steady_clock::now() + delay_ms;
     return RunAt(timepoint, cb);
 }
 
-TimerId_t EventLoop::RunEvery(const TimeoutDuration_t interval, const TimeoutCb_t& cb) {
+TimerId_t EventLoop::RunEvery(const Interval_t& interval, const TimeoutCb_t& cb) {
     using namespace std;
     auto timepoint = chrono::steady_clock::now() + interval;
     return timerQueue_->AddTimer(timepoint, interval, cb);
