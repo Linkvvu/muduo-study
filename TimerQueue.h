@@ -30,7 +30,7 @@ public:
     /** 
      * thread-safe
     */
-    TimerId_t AddTimer(const TimePoint_t& when, const Interval_t& interval_ms, const TimeoutCb_t& cb);
+    TimerId_t AddTimer(const TimePoint_t& when, const Interval_t& interval, const TimeoutCb_t& cb);
     void CancelTimer(const TimerId_t id);
     
     /**

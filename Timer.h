@@ -19,10 +19,10 @@ class Timer {
     friend TimerQueue::ExpiredTimersList_t TimerQueue::GetExpiredTimers();
 
 public:
-    Timer(const TimePoint_t& timeout, const Interval_t& interval_ms, const TimeoutCb_t& cb, const TimerId_t id)
+    Timer(const TimePoint_t& time_point, const Interval_t& interval_us, const TimeoutCb_t& cb, const TimerId_t id)
         : cb_(cb)
-        , expiration_(timeout)
-        , interval_(interval_ms)
+        , expiration_(time_point)
+        , interval_(interval_us)
         , id_(id)
         { }
 

@@ -16,7 +16,6 @@ int CreateTimerfd() {
     return fd;
 }
 
-
 Watcher::Watcher(TimerQueue* owner)
     : owner_(owner)
     , watcherChannel_(std::make_unique<Channel>(owner_->Owner(), CreateTimerfd()))
@@ -35,6 +34,7 @@ Watcher::~Watcher() noexcept {
 }
 
 void Watcher::HandleExpiredTimers() {
+    owner_->Owner()->AssertInLoopThread();
     ReadTimerfd();
     owner_->HandleExpiredTimers();
 }

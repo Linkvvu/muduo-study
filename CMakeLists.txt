@@ -4,6 +4,9 @@ project(muduo)
 
 include_directories(${CMAKE_SOURCE_DIR})
 
+set(CMAKE_CXX_STANDARD "14")
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
+
 set(
     MUDUO_NET
     EventLoop.cpp
@@ -13,6 +16,7 @@ set(
     Timer.cpp
     TimerQueue.cpp
     logger.cpp
+    Bridge.cpp
 )
 
 set(UNIT_TEST ON)

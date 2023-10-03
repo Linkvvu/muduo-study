@@ -176,17 +176,19 @@ TimerQueue::TimerQueue(EventLoop* owner)
 
 TimerQueue::~TimerQueue() noexcept = default;
 
-TimerId_t TimerQueue::AddTimer(const TimePoint_t& when, const Interval_t& interval_ms, const TimeoutCb_t& cb)
+TimerId_t TimerQueue::AddTimer(const TimePoint_t& when, const Interval_t& interval, const TimeoutCb_t& cb)
 {
-    owner_->AssertInLoopThread();
     assert(when != TimePoint_t::max());
     int cur_timer_id = nextTimerId_++;
-    std::unique_ptr<Timer> t_p = std::make_unique<Timer>(when, interval_ms, cb, cur_timer_id);
-    AddTimerInLoop(t_p);
+    owner_->RunInEventLoop([=]() {  // Capture by value
+        std::unique_ptr<Timer> t_p = std::make_unique<Timer>(when, interval, cb, cur_timer_id);
+        this->AddTimerInLoop(t_p);
+    });
     return cur_timer_id;
 }
 
 void TimerQueue::AddTimerInLoop(std::unique_ptr<Timer>& t_p) {
+    owner_->AssertInLoopThread();
     auto timeout = t_p->ExpirationTime();
     bool latest_need_update = heap_->Add(std::move(t_p));
     if (latest_need_update) {
@@ -196,11 +198,11 @@ void TimerQueue::AddTimerInLoop(std::unique_ptr<Timer>& t_p) {
 }
 
 void TimerQueue::CancelTimer(const TimerId_t id) {
-    owner_->AssertInLoopThread();
-    CancelTimerInLoop(id);
+    owner_->RunInEventLoop(std::bind(&TimerQueue::CancelTimerInLoop, this, id));
 }
 
 void TimerQueue::CancelTimerInLoop(const TimerId_t id) {
+    owner_->AssertInLoopThread();
     bool latest_need_update = heap_->Del(id);
     if (latest_need_update) {
         if (heap_->Empty()) {

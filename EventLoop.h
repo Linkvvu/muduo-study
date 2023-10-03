@@ -2,10 +2,13 @@
 #define MUDUO_EVENTLOOP_H
 
 #include <TimerType.h>
+#include <Callbacks.h>
+#include <mutex>
 #include <atomic>
 #include <thread>
 #include <vector>
 #include <memory>
+#include <cassert>
 #include <iostream>
 
 namespace muduo {
@@ -13,6 +16,7 @@ namespace muduo {
     class EventLoop;    // forward declaration
     class Channel;      // forward declaration
     class Poller;       // forward declaration
+    class Bridge;       // forward declaration
 }
 
 namespace {
@@ -30,10 +34,10 @@ private:
 public:
     EventLoop();
     ~EventLoop();
-    /// noncopyable  
+    /// noncopyable & nonmoveable
     EventLoop(const EventLoop&) = delete;
 
-    /// @brief start loop
+    /// @brief Must be called in the same thread as creation of the object.
     void Loop();
 
     bool IsInLoopThread()
@@ -44,25 +48,54 @@ public:
         if (!IsInLoopThread()) { Abort(); }
     }
 
-    // Can be called across-threads
-    void Quit() {
-        quit_.store(true);
-        if (!IsInLoopThread()) {
-            // WakeUp
-        }
-    }
+    /// @note Safe to call from other threads
+    void Quit();
 
+    /// @note internal usage
     void UpdateChannel(Channel* c);
+    /// @note internal usage
     void RemoveChannel(Channel* c);
 
+    /**
+     * Runs callback at 'when'
+     * Safe to call from other threads
+    */
     TimerId_t RunAt(const TimePoint_t& when, const TimeoutCb_t& cb);
+
+    /**
+     * Runs callback after delay which the given time
+     * Safe to call from other threads
+    */
     TimerId_t RunAfter(const Interval_t& delay, const TimeoutCb_t& cb);
+
+    /**
+     * Runs callback every 'interval' which the given time
+     * Safe to call from other threads
+    */
     TimerId_t RunEvery(const Interval_t& interval, const TimeoutCb_t& cb);
+
+    /**
+     * Safe to call from other threads.
+    */
     void cancelTimer(const TimerId_t timerId);
 
+    /**
+     * Enqueueing cb in the loop thread
+     * Runs after finish pooling
+     * Safe to call from other threads
+    */
+    void EnqueueEventLoop(const PendingEventCb_t& cb);
+
+    /**
+     * Runs callback immediately in the loop thread
+     * It wakes up the loop, and run the cb.
+     * If in the same loop thread, cb is run within the function.
+     * Safe to call from other threads.
+    */
+    void RunInEventLoop(const PendingEventCb_t& cb);
+    
 public:
-    static EventLoop& GetCurrentThreadLoop()
-    { return *tl_loop_inThisThread; } 
+    static EventLoop* GetCurrentThreadLoop();
 
 private:
     /// @brief is not in holder-thread
@@ -78,21 +111,26 @@ private:
      * debug helper
     */
     void PrintActiveChannels() const;
-
-    void HandleActiveChannels() const;
+    void HandleActiveChannels();
+    void HandlePendingCallbacks();
 
 private:
     const std::thread::id threadId_;
     bool looping_;
     std::atomic_bool quit_ { false };
-    mutable bool eventHandling_;
+    bool eventHandling_;
     std::unique_ptr<Poller> poller_;    // 組合
 
     ReceiveTimePoint_t receiveTimePoint_;
     using ChannelList_t = std::vector<Channel*>;
-    Channel* curChannel_;
     ChannelList_t activeChannels_;
     std::unique_ptr<TimerQueue> timerQueue_;
+
+    /* cross-threads wait/notify helper */
+    std::unique_ptr<Bridge> bridge_;
+    std::mutex mtx_;    // for sync EventLoop::pendingCbsQueue_
+    std::vector<PendingEventCb_t> pendingCbsQueue_;
+    std::atomic_bool callingPendingCbs_;
 };
     
 } // namespace muduo 

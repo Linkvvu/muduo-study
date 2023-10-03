@@ -1,18 +1,18 @@
 #include <poller/PollPoller.h>
 #include <EventLoop.h>
+#include <Callbacks.h>
 #include <TimerQueue.h>
 #include <Channel.h>
+#include <Bridge.h>
 #include <chrono>
 #include <cassert>
 #include <sys/poll.h>
 
-using namespace muduo;
-using namespace detail;
-
 namespace {
-    thread_local EventLoop* tl_loop_inThisThread = nullptr;
+    thread_local muduo::EventLoop* tl_loop_inThisThread = {nullptr};
 }
 
+namespace muduo {
 using namespace std::chrono;
 
 const EventLoop::TimeoutDuration_t EventLoop::kPollTimeout = duration_cast<EventLoop::TimeoutDuration_t>(seconds(5));
@@ -23,9 +23,10 @@ EventLoop::EventLoop()
     , quit_(false)
     , eventHandling_(false)
     , poller_(std::make_unique<detail::PollPoller>(this))
-    , curChannel_(nullptr)
     , activeChannels_()
     , timerQueue_(std::make_unique<TimerQueue>(this))
+    , bridge_(std::make_unique<Bridge>(this))
+    , callingPendingCbs_(false)
 {
     std::clog << "thread " << threadId_ << " EventLoop is created" << std::endl;
     if (tl_loop_inThisThread != nullptr) {
@@ -42,6 +43,10 @@ EventLoop::~EventLoop() {
     tl_loop_inThisThread = nullptr;
 }
 
+EventLoop* EventLoop::GetCurrentThreadLoop() {
+    return tl_loop_inThisThread;
+}
+
 void EventLoop::PrintActiveChannels() const {
     
 }
@@ -50,6 +55,7 @@ void EventLoop::Loop() {
     AssertInLoopThread();   // must loop in itself thread
     assert(!looping_);
     assert(!eventHandling_);
+    assert(!callingPendingCbs_);
 
     looping_ = true;
     std::cout << "thread " << threadId_ << " starting loop" << std::endl;
@@ -61,11 +67,12 @@ void EventLoop::Loop() {
         // if (logger::logLevel() <= logger::LogLevel::TRACE) {
         //     printActiveChannels();
         // }
+        HandlePendingCallbacks();
     }
     looping_ = false;
 }
 
-void EventLoop::HandleActiveChannels() const {
+void EventLoop::HandleActiveChannels() {
     assert(!eventHandling_);
     eventHandling_ = true;
     for (auto c : activeChannels_) {
@@ -86,9 +93,9 @@ TimerId_t EventLoop::RunAt(const TimePoint_t& when, const TimeoutCb_t& cb) {
     return timerQueue_->AddTimer(when, TimeoutDuration_t::zero(), cb);
 }
 
-TimerId_t EventLoop::RunAfter(const Interval_t& delay_ms, const TimeoutCb_t& cb) {
+TimerId_t EventLoop::RunAfter(const Interval_t& delay, const TimeoutCb_t& cb) {
     using namespace std;
-    auto timepoint = chrono::steady_clock::now() + delay_ms;
+    auto timepoint = chrono::steady_clock::now() + delay;
     return RunAt(timepoint, cb);
 }
 
@@ -100,4 +107,51 @@ TimerId_t EventLoop::RunEvery(const Interval_t& interval, const TimeoutCb_t& cb)
 
 void EventLoop::cancelTimer(const TimerId_t timerId) {
     timerQueue_->CancelTimer(timerId);
+}
+
+void EventLoop::EnqueueEventLoop(const PendingEventCb_t& cb) {
+    {
+        std::lock_guard<std::mutex> guard(mtx_);
+        pendingCbsQueue_.push_back(cb);
+    }
+
+    /**
+     * 1. 如果不在IO线程中，因为IO线程此时可能阻塞在poll中，为确保任务即使被处理，故要调用WakeUp
+     * 2. 如果在IO线程中并且此时线程正在处理pending Callbacks，由Loop内部实现决定此时还需调用WakeUp,防止IO线程阻塞
+     * 3. 如果在IO线程中且此时线程正在处理activeChannels的callback，则无需调用WakeUp
+    */
+    if (!IsInLoopThread() || callingPendingCbs_) {
+        bridge_->WakeUp();
+    }
+}
+
+void EventLoop::RunInEventLoop(const PendingEventCb_t& cb) {
+    if (IsInLoopThread()) {
+        cb();
+    } else {
+        EnqueueEventLoop(cb);
+    }
+}
+
+void EventLoop::HandlePendingCallbacks() {
+    std::vector<PendingEventCb_t> tmp_queue;
+    callingPendingCbs_.store(true);
+    {   // 缩短临界区大小
+        std::lock_guard<std::mutex> guard(mtx_);
+        tmp_queue.swap(pendingCbsQueue_);    // Can effectively prevent deadlock
+    }
+    for (const auto& cb : tmp_queue) {
+        cb.operator()();
+    }
+    callingPendingCbs_.store(false);
+}
+
+void EventLoop::Quit() {
+    assert(quit_ == false);
+    quit_.store(true);
+    if (!IsInLoopThread()) {
+        bridge_->WakeUp();
+    }
+}
+
 }
