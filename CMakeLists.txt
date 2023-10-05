@@ -17,6 +17,7 @@ set(
     TimerQueue.cpp
     logger.cpp
     Bridge.cpp
+    EventLoopThread.cpp
 )
 
 set(UNIT_TEST ON)
