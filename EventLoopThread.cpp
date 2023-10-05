@@ -2,8 +2,9 @@
 #include <EventLoopThread.h>
 using namespace muduo;
 
-EventLoopThread::EventLoopThread(const IoThreadInitCb_t& cb)
+EventLoopThread::EventLoopThread(const IoThreadInitCb_t& cb, const std::string& n)
     : loop_(nullptr)
+    , name_(n)
     , initCb_(cb)
     , IoThread_()
     , isExit_(false)

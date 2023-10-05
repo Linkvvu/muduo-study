@@ -14,3 +14,6 @@ target_link_libraries(Bridge_unittest "pthread" "muduoNet" "fmt")
 
 add_executable(EventLoopThread_unittest EventLoopThread_unittest.cc)
 target_link_libraries(EventLoopThread_unittest "pthread" "muduoNet" "fmt")
+
+add_executable(EventLoopThreadPool_unittest EventLoopThreadPool_unittest.cc)
+target_link_libraries(EventLoopThreadPool_unittest "pthread" "muduoNet" "fmt" "GTest::gtest" "GTest::gmock_main")

@@ -18,6 +18,7 @@ set(
     logger.cpp
     Bridge.cpp
     EventLoopThread.cpp
+    EventLoopThreadPool.cpp
 )
 
 set(UNIT_TEST ON)
