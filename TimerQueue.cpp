@@ -232,6 +232,7 @@ void TimerQueue::ResetTimerfd() {
 }
 
 void TimerQueue::HandleExpiredTimers() {
+    // owner_->AssertInLoopThread();   // Already asserted in watcher::HandleExpiredTimers
     ExpiredTimersList_t expired_timers = GetExpiredTimers();
     for (const auto& t : expired_timers) {
         t->Run();

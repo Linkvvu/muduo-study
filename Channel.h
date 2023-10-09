@@ -12,7 +12,7 @@ namespace muduo {
 /**
  * This class doesn't own the file descriptor.
  * The file descriptor could be a socket \ event fd \ timer fd \ signal fd
- * Channel is responsible to register and reply IO events
+ * Channel is responsible to register and handle IO events
 */
 class Channel {
     Channel(const Channel&) = delete;   // non-copyable & non-moveable
@@ -27,7 +27,10 @@ public:
     using ReceiveTimePoint_t = EventLoop::ReceiveTimePoint_t;
     using RDCallback_t = std::function<void(ReceiveTimePoint_t)>;
 
-    ~Channel() { assert(!eventHandling_); };
+    ~Channel() { 
+        assert(!eventHandling_);
+        /// TODO: assert(!addedToLoop_);
+    };
 
     /**
      * 将当前Channel绑定給給由shared_ptr管理的所有者对象

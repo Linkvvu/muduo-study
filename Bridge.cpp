@@ -43,6 +43,7 @@ void Bridge::WakeUp() const {
 }
 
 void Bridge::HandleWakeUpFdRead() const {
+    owner_->AssertInLoopThread();
     uint64_t buffer = 1;
     ssize_t n = ::read(chan_->FileDescriptor(), &buffer, sizeof buffer);
     if (n != sizeof buffer) {
