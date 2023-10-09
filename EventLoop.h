@@ -11,6 +11,12 @@
 #include <cassert>
 #include <iostream>
 
+/**
+ * Mode of one EventLoop instance per thread.
+ * For synchronize all threads,
+ * All **Reactor-handlers** must handle IO events in their respective EventLoop-threads.
+ */
+
 namespace muduo {
     class TimerQueue;   // forward declaration
     class EventLoop;    // forward declaration

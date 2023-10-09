@@ -6,7 +6,6 @@
 
 namespace muduo {
 namespace sockets {
-/// @note The actual structure passed for the addr argument will depend on the address family of socket.
 
 /// create an non-blocking socket
 /// abort if any error

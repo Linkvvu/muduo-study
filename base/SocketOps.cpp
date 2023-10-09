@@ -5,6 +5,9 @@
 #include <unistd.h>
 #include <iostream>
 
+/// @note The actual structure passed for the addr argument will depend on the address family of socket,
+/// So, for support IPv6, should Use 'sockaddr_in6'&'sizeof(sockaddr_in6)' in related operations
+
 using namespace muduo;
 
                         /* socket-APIs */
