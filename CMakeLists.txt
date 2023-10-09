@@ -4,7 +4,7 @@ project(muduo)
 
 include_directories(${CMAKE_SOURCE_DIR})
 
-set(CMAKE_CXX_STANDARD "14")
+set(CMAKE_CXX_STANDARD "17")
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 set(
@@ -21,6 +21,8 @@ set(
     EventLoopThreadPool.cpp
     base/SocketOps.cpp
     InetAddr.cpp
+    TcpConnection.cpp
+    Socket.cpp
 )
 
 set(UNIT_TEST ON)

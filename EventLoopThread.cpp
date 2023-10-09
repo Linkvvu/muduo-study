@@ -21,6 +21,7 @@ EventLoopThread::~EventLoopThread() noexcept {
 }
 
 EventLoop* EventLoopThread::Run() {
+    // TODO: use atomic_flag(CAS) for secure multiple calls
     assert(IoThread_.joinable() == false);
     
     std::thread tmp(std::bind(&EventLoopThread::ThreadFunc, this));
