@@ -17,3 +17,9 @@ target_link_libraries(EventLoopThread_unittest "pthread" "muduoNet" "fmt")
 
 add_executable(EventLoopThreadPool_unittest EventLoopThreadPool_unittest.cc)
 target_link_libraries(EventLoopThreadPool_unittest "pthread" "muduoNet" "fmt" "GTest::gtest" "GTest::gmock_main")
+
+add_executable(Endian_unittest Endian_unittest.cc)
+target_link_libraries(Endian_unittest "GTest::gtest" "GTest::gtest_main")
+
+add_executable(Sockaddr_unittest Sockaddr_unittest.cc)
+target_link_libraries(Sockaddr_unittest "GTest::gtest" "GTest::gtest_main")

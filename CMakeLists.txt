@@ -19,6 +19,8 @@ set(
     Bridge.cpp
     EventLoopThread.cpp
     EventLoopThreadPool.cpp
+    base/SocketOps.cpp
+    InetAddr.cpp
 )
 
 set(UNIT_TEST ON)
