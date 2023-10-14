@@ -14,10 +14,17 @@ public:
         : sockfd_(sockfd)
     { }
 
-
     ~Socket() noexcept;
 
+    int FileDescriptor() const
+    { return sockfd_; }
 
+    void Listen();
+    void BindInetAddr(const InetAddr& addr);
+    void SetReusePort(bool on);
+    void SetReuseAddr(bool on);
+    int Accept(InetAddr* addr);
+    
 private:
     const int sockfd_;
 };

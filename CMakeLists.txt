@@ -23,6 +23,7 @@ set(
     InetAddr.cpp
     TcpConnection.cpp
     Socket.cpp
+    Acceptor.cpp
 )
 
 set(UNIT_TEST ON)

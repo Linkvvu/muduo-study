@@ -14,6 +14,10 @@ union SockAddr {
     struct sockaddr_in inet4;
     struct sockaddr_in6 inet6;
 
+    /// FIXME: don`t use "operator type statement", it`s not graceful And clear
+    explicit operator const sockaddr_in6&() const {
+        return inet6;
+    }
     explicit operator sockaddr_in6&() {
         return inet6;
     }
@@ -50,7 +54,18 @@ public:
     InetAddr& operator=(const InetAddr&) = default;    
     // default destructor is okey.
     
-    const struct sockaddr* GetNativeSockAddr();
+    sa_family_t GetAddressFamily() const { return addr_.inet4.sin_family; }
+    const struct sockaddr* GetNativeSockAddr() const;
+
+    void SetSockAddr(const SockAddr& a)
+    { addr_ = a; }
+    void SetSockAddrInet4(const struct sockaddr_in& a)
+    { addr_.inet4 = a; }
+    void SetSockAddrInet6(const struct sockaddr_in6& a)
+    { addr_.inet6 = a; }
+
+    std::string GetIpPort() const;
+    std::string GetIp() const;
 
 private:
     SockAddr addr_;

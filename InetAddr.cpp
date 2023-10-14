@@ -43,7 +43,7 @@ InetAddr::InetAddr(const std::string& ip, uint16_t port, bool ipv6) {
     }
 }
 
-const sockaddr* InetAddr::GetNativeSockAddr() {
+const sockaddr* InetAddr::GetNativeSockAddr() const {
     const sockaddr* tmp = sockets::sockaddr_cast(&addr_.inet4);
     // const sockaddr* tmp = sockets::sockaddr_cast(&addr_.inet6);
     if (tmp->sa_family == AF_INET) {
@@ -54,3 +54,14 @@ const sockaddr* InetAddr::GetNativeSockAddr() {
     }
 }
 
+std::string InetAddr::GetIpPort() const {
+    char buf[64];   // adequate
+    sockets::toIpPort(buf, sizeof buf, sockets::sockaddr_cast(&addr_.operator const sockaddr_in6 &()));
+    return std::string(buf);
+}
+
+std::string muduo::InetAddr::GetIp() const {
+    char buf[64];   // adequate
+    sockets::toIp(buf, sizeof buf, sockets::sockaddr_cast(&addr_.operator const sockaddr_in6 &()));
+    return std::string(buf);
+}
