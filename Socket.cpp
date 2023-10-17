@@ -34,10 +34,14 @@ void Socket::SetReuseAddr(bool on) {
 
 int Socket::Accept(InetAddr* addr) {
     sockets::SockAddr sock_addr;
-    std::memset(&addr, 0, sizeof addr);
+    std::memset(&sock_addr, 0, sizeof sock_addr);
     int sock_fd = sockets::accept(sockfd_, &sock_addr.operator sockaddr_in6 &());
     if (sock_fd >= 0) {
         addr->SetSockAddr(sock_addr);
     }
     return sock_fd;
+}
+
+void Socket::ShutdownWrite() {
+    sockets::shutdownWrite(sockfd_);
 }

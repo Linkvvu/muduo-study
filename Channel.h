@@ -25,7 +25,7 @@ public:
     Channel(EventLoop* owner, int fd);
     using EventCallback_t = std::function<void()>;
     using ReceiveTimePoint_t = EventLoop::ReceiveTimePoint_t;
-    using RDCallback_t = std::function<void(ReceiveTimePoint_t)>;
+    using RDCallback_t = std::function<void(const ReceiveTimePoint_t&)>;
 
     ~Channel() { 
         assert(!eventHandling_);

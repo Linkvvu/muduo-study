@@ -24,6 +24,7 @@ set(
     TcpConnection.cpp
     Socket.cpp
     Acceptor.cpp
+    TcpServer.cpp
 )
 
 set(UNIT_TEST ON)

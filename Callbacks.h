@@ -17,7 +17,7 @@ using IoThreadInitCb_t = std::function<void(EventLoop* loop)>;
 
 /// @brief Responsible for handling events which related to connection creation and destruction
 using ConnectionCallback_t = std::function<void(const TcpConnectionPtr& conn)>;
-using CloseCallback_t = std::function<void(const TcpConnectionPtr& conn)>;
+// using CloseCallback_t = std::function<void(const TcpConnectionPtr& conn)>;  // replaced by ConnectionCallback_t
 using MessageCallback_t = std::function<void(const TcpConnectionPtr& conn, const char* buf, size_t size, ReceiveTimePoint_t)>;
 
 

@@ -14,9 +14,9 @@ Acceptor::Acceptor(EventLoop* owner, const InetAddr& addr, bool reuse_port)
     , idleFd_(::open("/dev/null", O_RDONLY|O_CLOEXEC))
     , listening_(false)
 {
-    listener_->BindInetAddr(addr);
     listener_->SetReuseAddr(true);
     listener_->SetReusePort(reuse_port);
+    listener_->BindInetAddr(addr);
     channel_->SetReadCallback(std::bind(&Acceptor::HandleNewConnection, this));
 }
 

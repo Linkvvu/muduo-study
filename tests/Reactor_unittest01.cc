@@ -1,0 +1,54 @@
+/// single-Reactor mode, Acceptor and IO-handler run in same thread
+#include <InetAddr.h>
+#include <TcpServer.h>
+#include <EventLoop.h>
+#include <TcpConnection.h>
+#include <Callbacks.h>
+#include <memory>
+
+using namespace muduo;
+
+EventLoop* g_loop;
+
+class Test {
+public:
+    Test(EventLoop* loop, const InetAddr& listenerAddr) : s_(loop, listenerAddr)
+    {
+        s_.SetConnectionCallback(std::bind(&Test::onConnection, this, std::placeholders::_1));
+        s_.SetOnMessageCallback([](const TcpConnectionPtr& conn, const char* buf, size_t size, ReceiveTimePoint_t recv_timepoint) {
+            std::cout << "recv from [" << conn->GetName() << "]: " << buf;
+        });
+    }
+
+    void start() { s_.ListenAndServe(); }
+
+private:
+    void onConnection(const TcpConnectionPtr& conn) {
+        if (conn->IsConnected()) {
+            printf("onConnection(): new connection [%s] from %s, local address: %s\n",
+                conn->GetName().c_str(),
+                conn->GetRemoteAddr().GetIpPort().c_str(),
+                conn->GetLocalAddr().GetIpPort().c_str());
+        } else {
+            printf("onConnection(): connection [%s] is down\n",
+                conn->GetName().c_str());
+            g_loop->Quit();
+        }
+    }
+
+
+private:
+    TcpServer s_;
+};
+
+
+int main() {
+    EventLoop loop;
+    g_loop = &loop;
+    
+    InetAddr listener_addr(8888);
+    Test t(g_loop, listener_addr);
+    t.start();
+    
+    loop.Loop();
+}

@@ -23,3 +23,6 @@ target_link_libraries(Endian_unittest "GTest::gtest" "GTest::gtest_main")
 
 add_executable(Sockaddr_unittest Sockaddr_unittest.cc)
 target_link_libraries(Sockaddr_unittest "GTest::gtest" "GTest::gtest_main")
+
+add_executable(Reactor_unittest01 Reactor_unittest01.cc)
+target_link_libraries(Reactor_unittest01 muduoNet "GTest::gtest" "GTest::gtest_main")

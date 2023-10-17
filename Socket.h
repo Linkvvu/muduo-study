@@ -3,6 +3,8 @@
 
 namespace muduo {
 
+class InetAddr;     // forward declaration
+
 /// @brief socket wrapper, owning socket handle
 class Socket {
     // non-copyable & non-moveable
@@ -24,7 +26,8 @@ public:
     void SetReusePort(bool on);
     void SetReuseAddr(bool on);
     int Accept(InetAddr* addr);
-    
+    void ShutdownWrite();
+        
 private:
     const int sockfd_;
 };

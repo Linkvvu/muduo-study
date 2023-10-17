@@ -31,6 +31,9 @@ public:
 
     void SetNewConnectionCallback(const NewConnectionCallback_t& cb) 
     { onNewConnectionCb_ = cb; }
+    
+    std::string GetIp() const { return addr_.GetIp(); }
+    std::string GetIpPort() const { return addr_.GetIpPort(); }
 
 private:
     void HandleNewConnection();
