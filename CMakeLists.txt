@@ -25,6 +25,7 @@ set(
     Socket.cpp
     Acceptor.cpp
     TcpServer.cpp
+    base/MemPool.cpp
 )
 
 set(UNIT_TEST ON)
