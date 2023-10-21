@@ -1,8 +1,10 @@
 #if !defined(MUDUO_TCPCONNECTION_H)
 #define MUDUO_TCPCONNECTION_H
+
 #include <InetAddr.h>
 #include <TcpServer.h>  // for declare friend
 #include <Callbacks.h>
+#include <functional>
 #include <memory>
 #include <string>
 #include <any>
@@ -12,18 +14,32 @@ namespace muduo {
 class EventLoop;        // forward declaration
 class Channel;          // forward declaration
 class Socket;           // forward declaration
+namespace base {
+class MemPool;          // forward declartaion
+template <typename T>
+// using Pdeleter = void(*)(T* ptr);    // failed to construct a unique_ptr which use Pdeleter as 'deleter'
+using Pdeleter = std::function<void(T* ptr)>;
+} // namespace base 
+
 
 class TcpConnection : public std::enable_shared_from_this<TcpConnection> {
     friend void TcpServer::HandleNewConnection(int connfd, const InetAddr& remote_addr);
     friend void TcpServer::RemoveConnection(const TcpConnectionPtr& conn);
+    /* non-copyable and non-moveable*/
     TcpConnection(const TcpConnection&) = delete;
     TcpConnection& operator=(const TcpConnection&) = delete;
 
+    /* declare private-domain for factory pattern */
+    TcpConnection(EventLoop* owner, base::MemPool* pool, const std::string& name, int sockfd, const InetAddr& local_addr, const InetAddr& remote_addr);
+
+    /// destroy tcp-connection instance and free connection-level memory pool
+    static void DestroyTcpConnection(TcpConnection* conn);
     using CloseCallback_t = std::function<void(const TcpConnectionPtr& conn)>;
     enum State { connecting, connected, disconnecting, disconnected };
 
 public:
-    TcpConnection(EventLoop* owner, const std::string& name, int sockfd, const InetAddr& local_addr, const InetAddr& remote_addr);
+    /// Factory pattern, Return a Tcp-connection instance
+    static TcpConnectionPtr CreateTcpConnection(EventLoop* owner, const std::string& name, int sockfd, const InetAddr& local_addr, const InetAddr& remote_addr);
     ~TcpConnection() noexcept;
 
     EventLoop* GetEventLoop() { return loop_; }
@@ -61,9 +77,10 @@ private:
 
 private:
     EventLoop* loop_;
+    base::MemPool* pool_;   /* pool own most of resoucres of the connection */
     std::string name_;
-    std::unique_ptr<Socket> socket_;
-    std::unique_ptr<Channel> chan_;
+    std::unique_ptr<Socket, base::Pdeleter<Socket>> socket_;
+    std::unique_ptr<Channel, base::Pdeleter<Channel>> chan_;
     InetAddr localAddr_;
     InetAddr remoteAddr_;
     std::atomic<State> state_ {connecting};

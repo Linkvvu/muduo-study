@@ -33,7 +33,7 @@ void TcpServer::HandleNewConnection(int connfd, const InetAddr& remote_addr) {
     loop_->AssertInLoopThread();
     std::string new_conn_name = /*Server-name#*/ remote_addr.GetIpPort() + "@" + std::to_string(nextConnID_++); 
     InetAddr local_addr(sockets::getLocalAddr(connfd));
-    TcpConnectionPtr new_conn_ptr = std::make_shared<TcpConnection>(loop_, std::move(new_conn_name), connfd, local_addr, remote_addr);
+    TcpConnectionPtr new_conn_ptr = TcpConnection::CreateTcpConnection(loop_, std::move(new_conn_name), connfd, local_addr, remote_addr);
     std::clog << "TcpServer::HandleNewConnection: new connection [" << new_conn_name << "] from " << remote_addr.GetIpPort() << std::endl;
     conns_[new_conn_name] = new_conn_ptr;   // add current connection to list
     new_conn_ptr->SetConnectionCallback(connectionCb_);

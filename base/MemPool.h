@@ -65,6 +65,10 @@ private:
     size_t max_;   
     PSmallBlock* current_;
     PLargeBlock* large_;
+
+    /**
+     * ngx_pool_cleanup_t is replaced by deleter of smart-pointer
+     */
 };
 
 } // namespace base
