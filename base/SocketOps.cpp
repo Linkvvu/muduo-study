@@ -208,3 +208,7 @@ union sockets::SockAddr sockets::address::getRemoteAddr(int sockfd) {
     ::getpeername(sockfd, exact_structure, &len);
     return result;
 }
+
+ssize_t sockets::readv(int sockfd, const struct iovec *iov, int iovcnt) {
+    return ::readv(sockfd, iov, iovcnt);
+}
