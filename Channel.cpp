@@ -49,7 +49,7 @@ void Channel::HandleEventsWithGuard(ReceiveTimePoint_t receiveTime) {
         }
     }
 
-    // POLLHUP: When the file descriptor is closed or never opened
+    // POLLNVAL: When the file descriptor is closed or never opened
     if (revents_ & POLLNVAL) {
         std::clog << "POLLNVAL, fd=" << FileDescriptor() << std::endl;
     }
