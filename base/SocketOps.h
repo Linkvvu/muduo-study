@@ -3,6 +3,7 @@
 #include <InetAddr.h>
 #include <arpa/inet.h>
 #include <cstddef>
+#include <sys/uio.h>    // for readv(2)
 
 namespace muduo {
 namespace sockets {
@@ -35,6 +36,8 @@ extern void shutdownWrite(int sockfd);
 
 /// @return Return error code 
 extern int getSocketError(int sockfd);
+
+extern ssize_t readv(int sockfd, const struct iovec *iov, int iovcnt);
 
 namespace address {
 
