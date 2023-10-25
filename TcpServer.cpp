@@ -18,7 +18,13 @@ TcpServer::TcpServer(EventLoop* loop, const InetAddr& addr)
 }
 
 TcpServer::~TcpServer() noexcept {
-
+    loop_->AssertInLoopThread();
+    std::clog << "TcpServer::~TcpServer [" << this << "] destructing" << std::endl;
+    for (auto& item : conns_) {
+        TcpConnectionPtr cur_conn(item.second);
+        item.second.reset();
+        cur_conn->GetEventLoop()->RunInEventLoop(std::bind(&TcpConnection::StepIntoDestroyed, cur_conn));
+    }
 }
 
 std::string TcpServer::GetIp() const {
@@ -39,6 +45,7 @@ void TcpServer::HandleNewConnection(int connfd, const InetAddr& remote_addr) {
     new_conn_ptr->SetConnectionCallback(connectionCb_);
     new_conn_ptr->SetOnMessageCallback(messageCb_);
     new_conn_ptr->SetOnCloseCallback(std::bind(&TcpServer::RemoveConnection, this, std::placeholders::_1));
+    new_conn_ptr->SetWriteCompleteCallback(writeCompleteCb_);
     new_conn_ptr->StepIntoEstablished();
 }
 

@@ -28,6 +28,8 @@ public:
     { connectionCb_ = cb; }
     void SetOnMessageCallback(const MessageCallback_t& cb)
     { messageCb_ = cb; }
+    void SetOnWriteCompleteCallback(const WriteCompleteCallback_t& cb)
+    { writeCompleteCb_ = cb; }
     
 private:
     void HandleNewConnection(int connfd, const InetAddr& remote_addr);
@@ -45,7 +47,7 @@ private:
     /* Callbacks for custom logic */
     ConnectionCallback_t connectionCb_ {nullptr};
     MessageCallback_t messageCb_ {nullptr};
-
+    WriteCompleteCallback_t writeCompleteCb_ {nullptr};
     /* allways in loop-thread */
     uint64_t nextConnID_ {0};
 };

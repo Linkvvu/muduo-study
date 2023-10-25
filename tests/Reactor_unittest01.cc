@@ -15,8 +15,9 @@ public:
     Test(EventLoop* loop, const InetAddr& listenerAddr) : s_(loop, listenerAddr)
     {
         s_.SetConnectionCallback(std::bind(&Test::onConnection, this, std::placeholders::_1));
-        s_.SetOnMessageCallback([](const TcpConnectionPtr& conn, const char* buf, size_t size, ReceiveTimePoint_t recv_timepoint) {
-            std::cout << "recv from [" << conn->GetName() << "]: " << buf;
+        s_.SetOnMessageCallback([](const TcpConnectionPtr& conn, Buffer* buf, ReceiveTimePoint_t recv_timepoint) {
+            auto response = buf->RetrieveAllAsString();
+            std::cout << "recv from [" << conn->GetName() << "]: " << response;
         });
     }
 

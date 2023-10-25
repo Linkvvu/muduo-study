@@ -8,6 +8,7 @@
 namespace muduo {
 class EventLoop;        // forward declaration
 class TcpConnection;    // forward declaration
+class Buffer;           // forward declaration
 
 using TcpConnectionPtr = std::shared_ptr<TcpConnection>;
 using ReceiveTimePoint_t = std::chrono::system_clock::time_point;   // must same as EventLoop::ReceiveTimePoint_t
@@ -18,8 +19,9 @@ using IoThreadInitCb_t = std::function<void(EventLoop* loop)>;
 /// @brief Responsible for handling events which related to connection creation and destruction
 using ConnectionCallback_t = std::function<void(const TcpConnectionPtr& conn)>;
 // using CloseCallback_t = std::function<void(const TcpConnectionPtr& conn)>;  // replaced by ConnectionCallback_t
-using MessageCallback_t = std::function<void(const TcpConnectionPtr& conn, const char* buf, size_t size, ReceiveTimePoint_t)>;
-
+using MessageCallback_t = std::function<void(const TcpConnectionPtr& conn, Buffer* buf, ReceiveTimePoint_t)>;
+using HighWaterMarkCallback_t = std::function<void (const TcpConnectionPtr&, size_t)>;
+using WriteCompleteCallback_t = std::function<void (const TcpConnectionPtr&)>;
 
 } // namespace muduo 
 

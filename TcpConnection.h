@@ -1,6 +1,7 @@
 #if !defined(MUDUO_TCPCONNECTION_H)
 #define MUDUO_TCPCONNECTION_H
 
+#include <Buffer.h>
 #include <InetAddr.h>
 #include <TcpServer.h>  // for declare friend
 #include <Callbacks.h>
@@ -25,6 +26,8 @@ using Pdeleter = std::function<void(T* ptr)>;
 class TcpConnection : public std::enable_shared_from_this<TcpConnection> {
     friend void TcpServer::HandleNewConnection(int connfd, const InetAddr& remote_addr);
     friend void TcpServer::RemoveConnection(const TcpConnectionPtr& conn);
+    friend TcpServer::~TcpServer() noexcept;
+
     /* non-copyable and non-moveable*/
     TcpConnection(const TcpConnection&) = delete;
     TcpConnection& operator=(const TcpConnection&) = delete;
@@ -56,10 +59,23 @@ public:
     { connectionCb_ = cb; }
     void SetOnMessageCallback(const MessageCallback_t& cb)
     { onMessageCb_ = cb; }
+    void SetWriteCompleteCallback(const WriteCompleteCallback_t& cb)
+    { writeCompleteCb_ = cb; }
+    void SetHighWaterMarkCallback(size_t mark, const HighWaterMarkCallback_t& cb)
+    { highWaterMark_ = mark; highWaterCb_ = cb; }
+
 
     /// Thread-safe, can call cross-thread
     void Shutdown();
     
+    void Send(const std::string& s)
+    { Send(s.c_str(), s.size()); }
+    
+    void Send(const void* buf, size_t len)
+    { Send(static_cast<const char*>(buf), len); }
+
+    void Send(const char* buf, size_t len);
+
 private:
     /// @note Only used by muduo::TcpServer
     void SetOnCloseCallback(const CloseCallback_t& cb)
@@ -67,6 +83,8 @@ private:
     void StepIntoEstablished();
     void StepIntoDestroyed();
     void ShutdownInLoop();
+
+    void SendInLoop(const char* buf, size_t len);
 
     /* Reactor-handlers */
     void HandleClose();
@@ -88,6 +106,12 @@ private:
     ConnectionCallback_t connectionCb_ {nullptr};
     MessageCallback_t onMessageCb_ {nullptr};
     CloseCallback_t onCloseCb_ {nullptr};   // invoke TcpServer::RemoveConnection of Associated TCP-Server
+    WriteCompleteCallback_t writeCompleteCb_ {nullptr};
+    HighWaterMarkCallback_t highWaterCb_ {nullptr};
+    size_t highWaterMark_ {0};
+
+    Buffer inputBuffer_;
+    Buffer outputBuffer_;
 };
 
 } // namespace muduo 

@@ -56,6 +56,8 @@ TcpConnection::TcpConnection(EventLoop* owner, base::MemPool* pool, const std::s
         std::bind(&base::PdeleterWithPool<Channel>, pool_, std::placeholders::_1))
     , localAddr_(local_addr)
     , remoteAddr_(remote_addr)
+    , inputBuffer_()
+    , outputBuffer_()
 {
     chan_->SetReadCallback(std::bind(&TcpConnection::HandleRead, this, std::placeholders::_1));
     chan_->SetWriteCallback(std::bind(&TcpConnection::HandleWrite, this));
@@ -64,7 +66,7 @@ TcpConnection::TcpConnection(EventLoop* owner, base::MemPool* pool, const std::s
 }
 
 TcpConnection::~TcpConnection() noexcept {
-    /// TODO: ...
+    std::clog << "TcpConnection::dtor[" <<  name_ << "] at " << this << " fd=" << chan_->FileDescriptor() << std::endl;
     assert(state_ == disconnected);
 }
 
@@ -79,9 +81,10 @@ void TcpConnection::StepIntoEstablished() {
 
 void TcpConnection::StepIntoDestroyed() {
     loop_->AssertInLoopThread();
-    assert(state_ == disconnected || state_ == connected);
-    if (state_ == connected) {
-        state_ = disconnected;
+    State expect = connected;
+    if (state_.compare_exchange_strong(expect, disconnected)) { // CAS
+        chan_->disableAllEvents();
+    } else if (expect == disconnecting) {   // when TcpServer is destroyed And the state of sockfd is disconnecting
         chan_->disableAllEvents();
     }
     connectionCb_(shared_from_this());
@@ -104,21 +107,45 @@ void TcpConnection::HandleError() {
 
 void TcpConnection::HandleRead(const ReceiveTimePoint_t& recv_timepoint) {
     loop_->AssertInLoopThread();
-    char temp_buf[1024] {0};
-    ssize_t ret = sockets::read(socket_->FileDescriptor(), temp_buf, sizeof temp_buf);
+    // ssize_t ret = sockets::read(socket_->FileDescriptor(), temp_buf, sizeof temp_buf);
+    int savedError = 0;
+    ssize_t ret = inputBuffer_.ReadFd(socket_->FileDescriptor(), &savedError);
     if (ret < 0) {
         std::cerr << "TcpConnection::HandleRead [" << name_ << "] occurred a error: " << strerror_thread_safe(errno) << std::endl;
         HandleError();
     } else if (ret == 0) {
         HandleClose();  // peer sends a FIN-package, so we should close the connection. (FIXME: 没有处理客户端半关闭的情况)
     } else {
-        onMessageCb_(shared_from_this(), temp_buf, ret, recv_timepoint);
+        onMessageCb_(shared_from_this(), &inputBuffer_, recv_timepoint);
     }
 }
 
 void TcpConnection::HandleWrite() {
     loop_->AssertInLoopThread();
-    /// TODO: write-logic
+    if (chan_->IsWriting()) {
+        ssize_t n = sockets::write(chan_->FileDescriptor(), outputBuffer_.Peek(), outputBuffer_.ReadableBytes());
+        if (n >= 0) {
+            outputBuffer_.Retrieve(n);
+            if (outputBuffer_.ReadableBytes() == 0) {
+                chan_->disableWriting();
+                if (writeCompleteCb_) {
+                    loop_->EnqueueEventLoop(std::bind(writeCompleteCb_, shared_from_this()));
+                }
+                if (state_ == disconnecting) {
+                    ShutdownInLoop();
+                }
+            }
+        } else {
+            std::cerr << "TcpConnection::handleWrite: " << muduo::strerror_thread_safe(errno) << std::endl;
+            // if (state_ == kDisconnecting)
+            // {
+            //   shutdownInLoop();
+            // }
+        }
+    } else {
+        std::clog << "Connection fd = " << chan_->FileDescriptor()
+                << " is down, no more writing";
+    }
 }
 
 void TcpConnection::Shutdown() {
@@ -139,4 +166,62 @@ void TcpConnection::ShutdownInLoop() {
     } /* else {
         This is handled by write-handler When the send-operation is complete
     } */
+}
+
+void TcpConnection::Send(const char* buf, size_t len) {
+    if (state_.load() == connected) {
+        if (loop_->IsInLoopThread()) {
+            SendInLoop(buf, len);
+        } else {
+            // saved buf`s data, Prevent buf from being destroyed
+            std::string savedData(buf, len);
+            loop_->EnqueueEventLoop([savedData = std::move(savedData), guard = shared_from_this()]() {
+                guard->SendInLoop(savedData.c_str(), savedData.size());
+            });
+        }
+    }
+}
+
+void TcpConnection::SendInLoop(const char* buf, size_t len) {
+    loop_->AssertInLoopThread();
+    ssize_t nwrote = 0;
+    size_t remaining = len;
+    bool faultError = false;
+    if (state_ == disconnected) {
+        std::clog << "disconnected, give up writing" << std::endl;
+        return;
+    }
+    // if no thing in output queue, try writing directly
+    if (!chan_->IsWriting() && outputBuffer_.ReadableBytes() == 0) {
+        nwrote = sockets::write(chan_->FileDescriptor(), buf, len);
+        if (nwrote >= 0) {
+            remaining = len - nwrote;
+            if (remaining == 0 && writeCompleteCb_) {
+                loop_->EnqueueEventLoop(std::bind(writeCompleteCb_, shared_from_this()));
+            }
+        } else {
+            nwrote = 0;
+            if (errno != EWOULDBLOCK) {
+                std::cerr << "TcpConnection::SendInLoop: " << muduo::strerror_thread_safe(errno) << std::endl;
+                if (errno == EPIPE || errno == ECONNRESET)
+                {
+                    faultError = true;
+                }
+            }
+        }
+    }
+
+    assert(remaining <= len);
+
+    if (!faultError && remaining > 0) {
+        size_t oldLen = outputBuffer_.ReadableBytes();
+        if (oldLen + remaining >= highWaterMark_ && oldLen < highWaterMark_ && highWaterCb_)
+        {
+            loop_->EnqueueEventLoop(std::bind(highWaterCb_, shared_from_this(), oldLen + remaining));
+        }
+        outputBuffer_.Append(buf+nwrote, remaining);
+        if (!chan_->IsWriting()) {
+            chan_->enableWriting();
+        }
+    }
 }

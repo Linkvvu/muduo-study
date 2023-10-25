@@ -32,3 +32,6 @@ target_link_libraries(MemPool_unittest muduoNet "GTest::gtest" "GTest::gtest_mai
 
 add_executable(Buffer_unittest Buffer_unittest.cc)
 target_link_libraries(Buffer_unittest muduoNet "GTest::gtest" "GTest::gtest_main")
+
+add_executable(TcpConnection_IO_unittest TcpConnection_IO_unittest.cc)
+target_link_libraries(TcpConnection_IO_unittest muduoNet)
