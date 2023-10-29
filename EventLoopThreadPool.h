@@ -21,7 +21,7 @@ public:
     { poolSize_ = s; }
 
     /* @note: init-callback is NULL by default */
-    void SetThreadInitCallback(const IoThreadInitCb_t& cb)
+    void SetThreadInitCallback(const IoThreadInitCallback_t& cb)
     { initCb_ = cb; }
 
     bool IsStarted() const
@@ -36,7 +36,7 @@ public:
 private:
     EventLoop* const baseLoop_;
     const std::string& name_;
-    IoThreadInitCb_t initCb_ {nullptr};
+    IoThreadInitCallback_t initCb_ {nullptr};
     std::size_t poolSize_ {0};
     mutable std::size_t nextLoopIdx_ {0};
     std::atomic_bool started_ {false};

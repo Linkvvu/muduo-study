@@ -36,3 +36,4 @@ if(UNIT_TEST)
 endif(UNIT_TEST)
 
 add_library(muduoNet ${MUDUO_NET})
+target_link_libraries(muduoNet pthread)

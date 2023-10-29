@@ -25,7 +25,7 @@ using Pdeleter = std::function<void(T* ptr)>;
 
 class TcpConnection : public std::enable_shared_from_this<TcpConnection> {
     friend void TcpServer::HandleNewConnection(int connfd, const InetAddr& remote_addr);
-    friend void TcpServer::RemoveConnection(const TcpConnectionPtr& conn);
+    friend void TcpServer::RemoveConnectionInLoop(const TcpConnectionPtr& conn);
     friend TcpServer::~TcpServer() noexcept;
 
     /* non-copyable and non-moveable*/

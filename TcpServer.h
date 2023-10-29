@@ -1,6 +1,5 @@
 #if !defined(MUDUO_TCPSERVER_H)
 #define MUDUO_TCPSERVER_H
-#include <InetAddr.h>
 #include <Callbacks.h>
 #include <unordered_map>
 #include <atomic>
@@ -10,6 +9,8 @@ namespace muduo {
 class EventLoop;        // forward declaration
 class Acceptor;         // forward declaration
 class TcpConnection;    // forward declaration
+class EventLoopThreadPool;  // forward declaration
+
 /// @brief A non-copyable TCP-Server
 /// single-Reactor mode, Acceptor and IO-handler run in same thread
 class TcpServer {
@@ -18,11 +19,14 @@ class TcpServer {
     TcpServer& operator=(const TcpServer&) = delete;
 
 public:
-    explicit TcpServer(EventLoop* loop, const InetAddr& addr/*, string name*/);
+    explicit TcpServer(EventLoop* loop, const InetAddr& addr, const std::string& name);
     ~TcpServer() noexcept;  // force out-line dtor, for std::unique_ptr members.
     std::string GetIp() const;
     std::string GetIpPort() const;
     void ListenAndServe();
+
+    void SetIoThreadNum(int n);
+    void SetIothreadInitCallback(const IoThreadInitCallback_t& cb);
 
     void SetConnectionCallback(const ConnectionCallback_t& cb)
     { connectionCb_ = cb; }
@@ -30,15 +34,18 @@ public:
     { messageCb_ = cb; }
     void SetOnWriteCompleteCallback(const WriteCompleteCallback_t& cb)
     { writeCompleteCb_ = cb; }
-    
+
 private:
     void HandleNewConnection(int connfd, const InetAddr& remote_addr);
     void RemoveConnection(const TcpConnectionPtr& conn);
+    void RemoveConnectionInLoop(const TcpConnectionPtr& conn);
 
 private:
     EventLoop* loop_;
+    std::string name_;
     std::unique_ptr<InetAddr> addr_;
     std::unique_ptr<Acceptor> acceptor_;
+    std::unique_ptr<EventLoopThreadPool> ioThreadPool_;
     std::atomic_bool serving_ {false};
     
     using ConnectionsMap = std::unordered_map<std::string, TcpConnectionPtr>;

@@ -14,7 +14,7 @@ using TcpConnectionPtr = std::shared_ptr<TcpConnection>;
 using ReceiveTimePoint_t = std::chrono::system_clock::time_point;   // must same as EventLoop::ReceiveTimePoint_t
 using PendingEventCb_t = std::function<void()>;
 
-using IoThreadInitCb_t = std::function<void(EventLoop* loop)>;
+using IoThreadInitCallback_t = std::function<void(EventLoop* loop)>;
 
 /// @brief Responsible for handling events which related to connection creation and destruction
 using ConnectionCallback_t = std::function<void(const TcpConnectionPtr& conn)>;

@@ -2,7 +2,7 @@
 #include <EventLoopThread.h>
 using namespace muduo;
 
-EventLoopThread::EventLoopThread(const IoThreadInitCb_t& cb, const std::string& n)
+EventLoopThread::EventLoopThread(const IoThreadInitCallback_t& cb, const std::string& n)
     : loop_(nullptr)
     , name_(n)
     , initCb_(cb)
@@ -21,7 +21,7 @@ EventLoopThread::~EventLoopThread() noexcept {
 }
 
 EventLoop* EventLoopThread::Run() {
-    // TODO: use atomic_flag(CAS) for secure multiple calls
+    // TcpServer::ListenAndServe use CAS, So it's no longer needed here
     assert(IoThread_.joinable() == false);
     
     std::thread tmp(std::bind(&EventLoopThread::ThreadFunc, this));

@@ -12,7 +12,7 @@ EventLoop* g_loop;
 class EchoServer {
 public:
     EchoServer(EventLoop* loop, const InetAddr& listenerAddr)
-        : s_(loop, listenerAddr)
+        : s_(loop, listenerAddr, "Echo")
     {
         s_.SetConnectionCallback(std::bind(&EchoServer::onConnection, this, std::placeholders::_1));
         s_.SetOnMessageCallback(std::bind(&EchoServer::OnMessage, this, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3));

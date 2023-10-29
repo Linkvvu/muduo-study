@@ -35,3 +35,6 @@ target_link_libraries(Buffer_unittest muduoNet "GTest::gtest" "GTest::gtest_main
 
 add_executable(TcpConnection_IO_unittest TcpConnection_IO_unittest.cc)
 target_link_libraries(TcpConnection_IO_unittest muduoNet)
+
+add_executable(Reactor_unittest02 Reactor_unittest02.cc)
+target_link_libraries(Reactor_unittest02 muduoNet)
