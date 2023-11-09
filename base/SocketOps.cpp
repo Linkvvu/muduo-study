@@ -1,9 +1,8 @@
 #include <base/SocketOps.h>
+#include <base/Logging.h>
 #include <base/Endian.h>
-#include <logger.h>
 #include <cassert>
 #include <unistd.h>
-#include <iostream>
 
 /// @note The actual structure passed for the addr argument will depend on the address family of socket,
 /// So, for support IPv6, should Use 'sockaddr_in6'&'sizeof(sockaddr_in6)' in related operations
@@ -14,8 +13,7 @@ using namespace muduo;
 int sockets::createNonblockingOrDie(sa_family_t family) {
     int sockfd = ::socket(family, SOCK_STREAM|SOCK_NONBLOCK|SOCK_CLOEXEC, IPPROTO_TCP);
     if (sockfd < 0) {
-        std::cerr << "sockets::createNonblockingOrDie: " << strerror_thread_safe(errno) << std::endl;
-        std::abort();
+        LOG_SYSFATAL << "sockets::createNonblockingOrDie";
     }
     return sockfd;
 }
@@ -23,8 +21,7 @@ int sockets::createNonblockingOrDie(sa_family_t family) {
 void sockets::bindOrDie(int sockfd, const struct sockaddr* addr) {
     int ret = ::bind(sockfd, addr, static_cast<socklen_t>(sizeof(sockaddr_in6)));
     if (ret < 0) {
-        std::cerr << "sockets::bindOrDie: " << strerror_thread_safe(errno) << std::endl;
-        std::abort();
+        LOG_SYSFATAL << "sockets::bindOrDie";
     }
 }
 
@@ -35,7 +32,7 @@ int sockets::connect(int sockfd, const struct sockaddr* addr) {
 void sockets::listenOrDie(int sockfd) {
     int ret = ::listen(sockfd, SOMAXCONN);
     if (ret < 0) {
-        std::cerr << "sockets::listenOrDie: " << strerror_thread_safe(errno) << std::endl;
+        LOG_SYSFATAL << "sockets::listenOrDie";
         std::abort();
     }
 }
@@ -51,7 +48,7 @@ int sockets::accept(int listener, struct sockaddr_in6* addr) {
     socklen_t len = static_cast<socklen_t>(sizeof *addr);
     int sockfd = ::accept4(listener, sockets::sockaddr_cast(addr), &len, SOCK_NONBLOCK|SOCK_CLOEXEC);
     if (sockfd < 0) {
-        std::cerr << "sockets::accept: " << strerror_thread_safe(errno) << std::endl;
+        LOG_SYSERR << "sockets::accept";
         switch (errno) {
         case EAGAIN:
         case EINTR:
@@ -65,11 +62,9 @@ int sockets::accept(int listener, struct sockaddr_in6* addr) {
         case ENFILE:        // OS已经没有可供打开的文件
         case ENOBUFS:
         case ENOMEM:
-            std::cerr << "sockets::accept unexpected error: " << strerror_thread_safe(errno) << std::endl;
-            abort();
+            LOG_FATAL << "sockets::accept unexpected error, detail: " << strerror_thread_safe(errno);
         default:
-            std::cerr << "sockets::accept unknow error: " << strerror_thread_safe(errno) << std::endl;
-            abort();
+            LOG_FATAL << "sockets::accept unknow error, detail: " << strerror_thread_safe(errno);
         }
     }
     return sockfd;
@@ -86,14 +81,14 @@ ssize_t sockets::write(int sockfd, const void* buf, size_t size) {
 void sockets::close(int sockfd) {
     int ret = ::close(sockfd);
     if (ret < 0) {
-        std::cerr << "sockets::close: " << strerror_thread_safe(errno) << std::endl;
+        LOG_SYSERR << "sockets::close";
     }
 }
 
 void sockets::shutdownWrite(int sockfd) {
     int ret = ::shutdown(sockfd, SHUT_WR);
     if (ret < 0) {
-        std::cerr << "sockets::shutdownWrite: " << strerror_thread_safe(errno) << std::endl;
+        LOG_SYSERR << "sockets::shutdownWrite";
     }
 }
 
@@ -101,7 +96,7 @@ int sockets::getSocketError(int sockfd) {
     int optval;
     socklen_t optlen = static_cast<socklen_t>(sizeof optval);
     if (::getsockopt(sockfd, SOL_SOCKET, SO_ERROR, &optval, &optlen) < 0) {
-        std::cerr << "sockets::getSocketError: " << strerror_thread_safe(errno) << std::endl;
+        LOG_SYSERR << "sockets::getSocketError";
         return errno;
     } else {
         return optval;
@@ -171,9 +166,9 @@ void sockets::address::fromIpPort(const char* ip, uint16_t port, struct sockaddr
     addr->sin_port = base::endian::NativeToBig(port);
     int ret = ::inet_pton(AF_INET, ip, &addr->sin_addr);
     if (ret < 0) {
-        std::cerr << "sockets::fromIpPort: " << strerror_thread_safe(errno) << std::endl;
+        LOG_SYSERR << "sockets::fromIpPort";
     } else if (ret == 0) {
-        std::cerr << "invalid character string for ip" << std::endl;
+        LOG_WARN << "invalid character string for ip(" << ip << ")";
     } else {
         assert(ret == 0);   // Represent success
     }
@@ -185,9 +180,9 @@ void sockets::address::fromIpPort(const char* ip, uint16_t port, struct sockaddr
     addr->sin6_port = base::endian::NativeToBig(port);
     int ret = ::inet_pton(AF_INET6, ip, &addr->sin6_addr);
     if (ret < 0) {
-        std::cerr << "sockets::fromIpPort: " << strerror_thread_safe(errno) << std::endl;
+        LOG_SYSERR << "sockets::fromIpPort";
     } else if (ret == 0) {
-        std::cerr << "invalid character string for ip" << std::endl;
+        LOG_WARN << "invalid character string for ip(" << ip << ")";
     } else {
         assert(ret == 0);   // Represent success
     }

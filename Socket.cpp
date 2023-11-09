@@ -1,7 +1,7 @@
 #include <Socket.h>
 #include <base/SocketOps.h>
-#include <logger.h>
-#include <iostream>
+#include <base/Logging.h>
+
 using namespace muduo;
 
 Socket::~Socket() noexcept {
@@ -20,7 +20,7 @@ void Socket::SetReusePort(bool on) {
     int optval = on ? 1 : 0;
     int ret = ::setsockopt(sockfd_, SOL_SOCKET, SO_REUSEPORT, &on, static_cast<socklen_t>(sizeof optval));
     if (ret < 0) {
-        std::cerr << "Socket::SetReusePort: " << strerror_thread_safe(errno) << std::endl; 
+        LOG_SYSERR << "Socket::SetReusePort"; 
     }
 }
 
@@ -28,7 +28,7 @@ void Socket::SetReuseAddr(bool on) {
     int optval = on ? 1 : 0;
     int ret = ::setsockopt(sockfd_, SOL_SOCKET, SO_REUSEADDR, &on, static_cast<socklen_t>(sizeof optval));
     if (ret < 0) {
-        std::cerr << "Socket::SetReusePort: " << strerror_thread_safe(errno) << std::endl; 
+        LOG_SYSERR << "Socket::SetReusePort"; 
     }
 }
 

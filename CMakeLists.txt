@@ -16,7 +16,6 @@ set(
     poller/PollPoller.cpp
     Timer.cpp
     TimerQueue.cpp
-    logger.cpp
     Bridge.cpp
     EventLoopThread.cpp
     EventLoopThreadPool.cpp

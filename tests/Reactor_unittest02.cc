@@ -6,6 +6,7 @@
 #include <EventLoop.h>
 #include <TcpConnection.h>
 #include <Callbacks.h>
+#include <iostream>
 #include <memory>
 
 using namespace muduo;
@@ -40,7 +41,6 @@ private:
         } else {
             printf("onConnection(): connection [%s] is down\n",
                 conn->GetName().c_str());
-            conn->GetEventLoop()->Quit();
         }
     }
 

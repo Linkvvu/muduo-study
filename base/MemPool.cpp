@@ -1,6 +1,6 @@
 #include <base/MemPool.h>
+#include <base/Logging.h>
 #include <new>  // placement new
-#include <iostream>
 #include <cstring>
 #include <cassert>
 #include <unistd.h>
@@ -36,8 +36,7 @@ const size_t MemPool::kMaxAllocFromSize = static_cast<size_t>(::getpagesize() - 
 
 MemPool* MemPool::CreateMemoryPool(size_t size) {
     if (size < MEM_POOL_MIN_SIZE) {
-        std::cerr << "Specified memory-pool size is too small, MEM_POOL_MIN_SIZE = " << MEM_POOL_MIN_SIZE << std::endl;
-        std::abort();
+        LOG_FATAL << "Specified memory-pool size is too small, MEM_POOL_MIN_SIZE = " << MEM_POOL_MIN_SIZE;
     }
 
     void* p = allocAligned(kPoolAlignment, size);

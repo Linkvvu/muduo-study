@@ -22,7 +22,7 @@ TcpServer::TcpServer(EventLoop* loop, const InetAddr& addr, const std::string& n
 
 TcpServer::~TcpServer() noexcept {
     loop_->AssertInLoopThread();
-    std::clog << "TcpServer::~TcpServer [" << this << "] destructing" << std::endl;
+    LOG_TRACE << "TcpServer[" << this << "] is destructing";
     for (auto& item : conns_) {
         TcpConnectionPtr cur_conn(item.second);
         item.second.reset();
@@ -45,7 +45,7 @@ void TcpServer::HandleNewConnection(int connfd, const InetAddr& remote_addr) {
     EventLoop* cur_loop = ioThreadPool_->GetNextLoop();
 
     TcpConnectionPtr new_conn_ptr = TcpConnection::CreateTcpConnection(cur_loop, std::move(new_conn_name), connfd, local_addr, remote_addr);
-    std::clog << "TcpServer::HandleNewConnection: new connection [" << new_conn_name << "] from " << remote_addr.GetIpPort() << std::endl;
+    LOG_INFO << "TcpServer::HandleNewConnection: new connection [" << new_conn_name << "] from " << remote_addr.GetIpPort();
     conns_[new_conn_name] = new_conn_ptr;   // add current connection to list
     new_conn_ptr->SetConnectionCallback(connectionCb_);
     new_conn_ptr->SetOnMessageCallback(messageCb_);

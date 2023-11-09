@@ -1,10 +1,10 @@
 #if !defined(MUDUO_TIMER_H)
 #define MUDUO_TIMER_H
 
+#include <base/Logging.h>
 #include <TimerQueue.h>
 #include <TimerType.h>
 #include <Channel.h>
-#include <logger.h>
 #include <Timer.h>
 #include <memory>
 #include <sys/timerfd.h>
@@ -57,8 +57,7 @@ public:
     void SetTimerfd(struct itimerspec* old_t, struct itimerspec* new_t) const {
         int ret = ::timerfd_settime(FileDescriptor(), TFD_TIMER_ABSTIME, new_t, old_t);
         if (ret != 0) {
-            // LOG-LEVEL: ERROR
-            std::cerr << "Failed to set timerfd, detail: " << muduo::strerror_thread_safe(errno) << std::endl;
+            LOG_SYSERR << "Failed to set timerfd";
             // wether need abort() ?
         }
     }

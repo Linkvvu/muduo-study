@@ -84,7 +84,7 @@ public:
      * for debug
     */
     std::string REventsToString() const {
-        std::cout << "called Channel::REventsToString" << std::endl;
+        // std::cout << "called Channel::REventsToString" << std::endl;
         return "";
     }
     

@@ -1,29 +1,31 @@
 #include <poller/PollPoller.h>
+#include <base/Logging.h>
 #include <Channel.h>
 #include <poll.h>
 #include <iostream>
 #include <cassert>
 #include <cstring>
-#include <logger.h>
 
 muduo::Poller::ReceiveTimePoint_t muduo::detail::PollPoller::Poll(const TimeoutDuration_t& timeout, ChannelList_t* activeChannels) {
     int numReady = ::poll(&pollfds_.front(), pollfds_.size(), timeout.count());
     // Get now-timestamp when poll(2) is awaked
     auto nowMicrosecond = std::chrono::system_clock::now();
     if (numReady > 0) {
-        std::clog << numReady << " events happened." << std::endl;
+        LOG_TRACE << numReady << " events happened.";
         FillActiveChannels(numReady, activeChannels);
     } else if (numReady == 0) {
-        std::clog << numReady << " nothing happened" << std::endl;
+        LOG_TRACE << numReady << " nothing happened";
     } else {
-        std::cerr << "PollPoller::Poll - " << muduo::strerror_thread_safe(errno) << std::endl;   
+        if (errno != EINTR) {
+            LOG_SYSERR << "PollPoller::Poll - " << muduo::strerror_thread_safe(errno);
+        }
     }
     return nowMicrosecond;
 }
 
 void muduo::detail::PollPoller::UpdateChannel(Channel* c) {
     muduo::Poller::AssertInLoopThread();
-    std::clog << "Update channel fd=" << c->FileDescriptor() << ", events=" << c->CurrentEvent() << std::endl;
+    LOG_TRACE << "Update channel fd=" << c->FileDescriptor() << ", events=" << c->CurrentEvent();
     if (c->Index() < 0) {   // index < 0,说明是一个新的通道，添加当前channel
         assert(channels_.find(c->FileDescriptor()) == channels_.end()); // 断言该fd没有对应的channel存在
         struct pollfd new_pollfd_obj;
@@ -57,7 +59,7 @@ void muduo::detail::PollPoller::UpdateChannel(Channel* c) {
 
 void muduo::detail::PollPoller::RemoveChannel(Channel* c) {
     Poller::AssertInLoopThread();
-    std::clog << "Remove channel fd=" << c->FileDescriptor() << std::endl;
+    LOG_TRACE << "Remove channel fd=" << c->FileDescriptor();
     assert(channels_.find(c->FileDescriptor()) != channels_.end());
     assert(channels_[c->FileDescriptor()] == c);
     assert(c->IsNoneEvent()); // NOTE:只有当前channel不关注任何事件才可以被从pollfds_中remove

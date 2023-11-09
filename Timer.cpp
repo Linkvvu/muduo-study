@@ -10,8 +10,7 @@ using namespace muduo;
 int CreateTimerfd() {
     int fd = timerfd_create(CLOCK_MONOTONIC, TFD_NONBLOCK|TFD_CLOEXEC);
     if (fd == -1) {
-        std::cerr << "Failed to create timerfd, detail: " << strerror_thread_safe(errno) << std::endl;
-        abort();
+        LOG_SYSFATAL << "Failed to create timerfd";
     }
     return fd;
 }
@@ -43,7 +42,7 @@ void Watcher::ReadTimerfd() const {
     uint64_t count = 0; 
     int ret = ::read(watcherChannel_->FileDescriptor(), &count, sizeof count);
     if (ret != sizeof count) {
-        std::cerr << "Watcher::ReadTimerfd reads " << ret << " bytes instead of 8" << std::endl;
+        LOG_ERROR << "Watcher::ReadTimerfd reads " << ret << " bytes instead of 8";
     }
     // return count;
 }

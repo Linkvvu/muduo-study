@@ -118,6 +118,13 @@ public:
         return *this << formated; 
     }
 
+    /// For pointers, except (const)void* and (const)char*
+    template <typename T>
+    self& operator<<(T* ptr) {
+        // invoke non-template member func: LogStream::operator<<(const void* ptr)
+        return *this << static_cast<void*>(ptr);        
+    }
+
     /* Member functions take precedence over template functions */
     self& operator<<(const std::string& str) {
         Append(str.c_str(), str.size());
@@ -141,10 +148,8 @@ public:
 
 private:
     Buffer buf_;
+    
 };
-
-/* Must be here, 必须先特例化 'const char*' , 避免特例化在实例化之后 */
-
 
 template<>
 LogStream::self& LogStream::operator<< <bool>(bool boolean);

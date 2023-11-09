@@ -1,6 +1,6 @@
 #if !defined(MUDUO_EVENTLOOP_H)
 #define MUDUO_EVENTLOOP_H
-
+#include <base/Logging.h>
 #include <TimerType.h>
 #include <Callbacks.h>
 #include <mutex>
@@ -9,7 +9,6 @@
 #include <vector>
 #include <memory>
 #include <cassert>
-#include <iostream>
 
 /**
  * Mode of one EventLoop instance per thread.
@@ -47,7 +46,7 @@ public:
     void Loop();
 
     bool IsInLoopThread()
-    { return threadId_ == std::this_thread::get_id(); }
+    { return threadId_ == ::pthread_self(); }
 
     void AssertInLoopThread()
     {
@@ -106,11 +105,7 @@ public:
 private:
     /// @brief is not in holder-thread
     void Abort() {
-        std::clog << "not in holder-thread, holder-thread = " 
-                << threadId_ << ", but current thread = " 
-                << std::this_thread::get_id()
-                << std::endl;
-        std::abort();
+        LOG_FATAL << "not in holder-thread, holder-thread-id=" << threadId_;
     }
 
     /**
@@ -121,7 +116,7 @@ private:
     void HandlePendingCallbacks();
 
 private:
-    const std::thread::id threadId_;
+    const pthread_t threadId_;
     bool looping_;
     std::atomic_bool quit_ { false };
     bool eventHandling_;

@@ -1,11 +1,12 @@
 #include <base/SocketOps.h>
 #include <base/MemPool.h>
-#include <new>
+#include <base/Logging.h>
 #include <TcpConnection.h>
 #include <EventLoop.h>
 #include <Channel.h>
 #include <Socket.h>
-#include <logger.h>
+#include <new>
+
 using namespace muduo;
 
 /// invoke T`s constructor with placement-new on 'position'
@@ -63,10 +64,11 @@ TcpConnection::TcpConnection(EventLoop* owner, base::MemPool* pool, const std::s
     chan_->SetWriteCallback(std::bind(&TcpConnection::HandleWrite, this));
     chan_->SetCloseCallback(std::bind(&TcpConnection::HandleClose, this));
     chan_->SetErrorCallback(std::bind(&TcpConnection::HandleError, this));
+    LOG_DEBUG << "TcpConnection[" <<  name_ << "] is constructed at " << this << " fd=" << chan_->FileDescriptor();
 }
 
 TcpConnection::~TcpConnection() noexcept {
-    std::clog << "TcpConnection::dtor[" <<  name_ << "] at " << this << " fd=" << chan_->FileDescriptor() << std::endl;
+    LOG_DEBUG << "TcpConnection[" <<  name_ << "] is being destructed at " << this << " fd=" << chan_->FileDescriptor();
     assert(state_ == disconnected);
 }
 
@@ -102,16 +104,17 @@ void TcpConnection::HandleClose() {
 void TcpConnection::HandleError() {
     loop_->AssertInLoopThread();
     int err = sockets::getSocketError(socket_->FileDescriptor());
-    std::cerr << "TcpConnection::HandleError [" << name_ << "] occurred a error: " << strerror_thread_safe(errno) << std::endl;
+    LOG_ERROR << "TcpConnection::HandleError[" << name_ << "] occurred a error," 
+        "detail: " << strerror_thread_safe(err) << "(" << err << ")"; 
 }
 
 void TcpConnection::HandleRead(const ReceiveTimePoint_t& recv_timepoint) {
     loop_->AssertInLoopThread();
-    // ssize_t ret = sockets::read(socket_->FileDescriptor(), temp_buf, sizeof temp_buf);
     int savedError = 0;
     ssize_t ret = inputBuffer_.ReadFd(socket_->FileDescriptor(), &savedError);
     if (ret < 0) {
-        std::cerr << "TcpConnection::HandleRead [" << name_ << "] occurred a error: " << strerror_thread_safe(errno) << std::endl;
+        errno = savedError;
+        LOG_SYSERR << "TcpConnection::HandleRead[" << name_ << "]";
         HandleError();
     } else if (ret == 0) {
         HandleClose();  // peer sends a FIN-package, so we should close the connection. (FIXME: 没有处理客户端半关闭的情况)
@@ -136,14 +139,16 @@ void TcpConnection::HandleWrite() {
                 }
             }
         } else {
-            std::cerr << "TcpConnection::handleWrite: " << muduo::strerror_thread_safe(errno) << std::endl;
+            LOG_SYSERR << "TcpConnection::handleWrite";
+            // The peer responds so slowly.
+            // whether shutdown the connection directly ?
             // if (state_ == kDisconnecting)
             // {
             //   shutdownInLoop();
             // }
         }
     } else {
-        std::clog << "Connection fd = " << chan_->FileDescriptor()
+        LOG_TRACE << "Connection fd = " << chan_->FileDescriptor()
                 << " is down, no more writing";
     }
 }
@@ -188,7 +193,7 @@ void TcpConnection::SendInLoop(const char* buf, size_t len) {
     size_t remaining = len;
     bool faultError = false;
     if (state_ == disconnected) {
-        std::clog << "disconnected, give up writing" << std::endl;
+        LOG_WARN << "disconnected, give up writing";
         return;
     }
     // if no thing in output queue, try writing directly
@@ -202,7 +207,7 @@ void TcpConnection::SendInLoop(const char* buf, size_t len) {
         } else {
             nwrote = 0;
             if (errno != EWOULDBLOCK) {
-                std::cerr << "TcpConnection::SendInLoop: " << muduo::strerror_thread_safe(errno) << std::endl;
+                LOG_SYSERR << "TcpConnection::SendInLoop";
                 if (errno == EPIPE || errno == ECONNRESET)
                 {
                     faultError = true;

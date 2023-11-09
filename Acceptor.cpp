@@ -35,7 +35,6 @@ void Acceptor::Listen() {
     if (listening_.compare_exchange_strong(expect, true)) { // CAS
         listener_->Listen();
         channel_->EnableReading();
-        std::clog << "start listening in " << GetListeningAddr().GetIpPort() << std::endl;
     }
 }
 
@@ -47,14 +46,14 @@ void Acceptor::HandleNewConnection() {
         if (onNewConnectionCb_) {
             onNewConnectionCb_(connfd, remote_addr);
         } else {
-            std::cerr << "[Waring] Acceptor is not set NewConnectionCallback, "
-                << "close new connection " << connfd << std::endl;
+            LOG_WARN << "Acceptor is not set NewConnectionCallback, "
+                << "close new connection(" << connfd << ")now";
             sockets::close(connfd);
         }
     } else {
-        std::cerr << "[Waring] Acceptor::HandleNewConnection occurs a error" << std::endl;
+        LOG_SYSERR << "in Acceptor::HandleNewConnection" ;
         if (errno == EMFILE) {  // Current progress opens too many open files, 占坑法
-            std::cerr << "[Waring] Current progress opens too many open files" << std::endl;
+            LOG_WARN << "Current progress opens too many open files";
 
             sockets::close(idleFd_);
             idleFd_ = ::accept(listener_->FileDescriptor(), nullptr, nullptr);

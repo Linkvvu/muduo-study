@@ -18,7 +18,7 @@ using namespace std::chrono;
 const EventLoop::TimeoutDuration_t EventLoop::kPollTimeout = duration_cast<EventLoop::TimeoutDuration_t>(seconds(5));
 
 EventLoop::EventLoop()
-    : threadId_(std::this_thread::get_id())
+    : threadId_(::pthread_self())
     , looping_(false)
     , quit_(false)
     , eventHandling_(false)
@@ -28,18 +28,18 @@ EventLoop::EventLoop()
     , bridge_(std::make_unique<Bridge>(this))
     , callingPendingCbs_(false)
 {
-    std::clog << "thread " << threadId_ << " EventLoop is created" << std::endl;
+    LOG_DEBUG << "EventLoop is created in thread " << threadId_;
     if (tl_loop_inThisThread != nullptr) {
-        std::cerr << "another EventLoop instance " << tl_loop_inThisThread
-                << " exists in this thread(" << threadId_ << ")"
-                << std::endl;
-        abort();
+        LOG_FATAL << "Another EventLoop instance " << tl_loop_inThisThread
+                << " exists in this thread";
     } else {
         tl_loop_inThisThread = this;
     }
 }
 
 EventLoop::~EventLoop() {
+    LOG_DEBUG << "EventLoop " << this << " of thread " << threadId_
+            << " destructs in thread " << ::pthread_self();
     tl_loop_inThisThread = nullptr;
 }
 
@@ -58,7 +58,9 @@ void EventLoop::Loop() {
     assert(!callingPendingCbs_);
 
     looping_ = true;
-    std::cout << "thread " << threadId_ << " starting loop" << std::endl;
+    quit_ = false;
+
+    LOG_TRACE << "EventLoop " << this << " start to loop";
 
     while (!quit_) {
         activeChannels_.clear();    // Clear the list for polling new channels
