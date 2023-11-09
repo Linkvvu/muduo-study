@@ -38,3 +38,6 @@ target_link_libraries(TcpConnection_IO_unittest muduoNet)
 
 add_executable(Reactor_unittest02 Reactor_unittest02.cc)
 target_link_libraries(Reactor_unittest02 muduoNet)
+
+add_executable(Logging_unittest Logging_unittest.cc)
+target_link_libraries(Logging_unittest muduoNet "GTest::gtest" "GTest::gtest_main")

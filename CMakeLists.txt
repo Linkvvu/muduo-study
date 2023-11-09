@@ -6,6 +6,7 @@ include_directories(${CMAKE_SOURCE_DIR})
 
 set(CMAKE_CXX_STANDARD "17")
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
+set(CMAKE_CXX_FLAGS "-Wall")
 
 set(
     MUDUO_NET
@@ -27,6 +28,8 @@ set(
     TcpServer.cpp
     base/MemPool.cpp
     Buffer.cpp
+    base/LogStream.cpp
+    base/Logging.cpp
 )
 
 set(UNIT_TEST ON)
