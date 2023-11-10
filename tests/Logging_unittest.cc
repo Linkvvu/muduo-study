@@ -168,7 +168,7 @@ TEST(LogStreamTests, Length) {
 }
 
 TEST(LoggerTests, print) {
-    muduo::SetOutputHandler([](const char* data, size_t len) {
+    muduo::Logger::SetOutputHandler([](const char* data, size_t len) {
         std::cout.write(data, len);
     }, false);
     LOG_TRACE << "TRACE";

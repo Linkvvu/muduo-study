@@ -41,3 +41,6 @@ target_link_libraries(Reactor_unittest02 muduoNet)
 
 add_executable(Logging_unittest Logging_unittest.cc)
 target_link_libraries(Logging_unittest muduoNet "GTest::gtest" "GTest::gtest_main")
+
+add_executable(LogFile_unittest LogFile_unittest.cc)
+target_link_libraries(LogFile_unittest muduoNet)

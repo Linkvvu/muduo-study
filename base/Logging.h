@@ -57,6 +57,9 @@ public:
     base::LogStream& GetStream()
     { return impl_.stream_; }
 
+    static void SetOutputHandler(Logger::OutputHandler handler, bool escape = true);
+    static void SetFlushHandler(Logger::FlushHandler handler);
+    
 private:
     class LoggerImpl {
         using time_point = std::chrono::system_clock::time_point;
@@ -68,7 +71,7 @@ private:
             const time_t time = std::chrono::system_clock::to_time_t(now);
             const auto tm = std::localtime(&time);
             std::ostringstream out_stream;
-            // year-month-day hour:minute:second
+            // year-month-day hour:minute:seconds
             out_stream << std::put_time(tm, "%Y-%m-%d %H:%M:%S");
             const auto now_ms = std::chrono::time_point_cast<std::chrono::milliseconds>(now);
             // get 3 bit ms
@@ -101,14 +104,10 @@ private:
 /* declare global config */
 extern Logger::LogLevel g_logLevel; /* set by environment variable */
 
-
 inline Logger::LogLevel GetLoglevel()
 {
     return g_logLevel;
 }
-
-extern void SetOutputHandler(Logger::OutputHandler handler, bool escape = true);
-extern void SetFlushHandler(Logger::FlushHandler handler);
 
 extern const char* strerror_thread_safe(int errnum);
 

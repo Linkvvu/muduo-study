@@ -79,12 +79,12 @@ namespace muduo {
     inline void OutputColor(bool on)
     { g_toConsole = on; }
 
-    void SetOutputHandler(Logger::OutputHandler handler, bool use_escape) {
+    void Logger::SetOutputHandler(Logger::OutputHandler handler, bool use_escape) {
         g_output_handler = handler;
         OutputColor(use_escape);
     }
     
-    void SetFlushHandler(Logger::FlushHandler handler) {
+    void Logger::SetFlushHandler(Logger::FlushHandler handler) {
         g_flush_handler = handler;
     }
 } // namespace muduo 

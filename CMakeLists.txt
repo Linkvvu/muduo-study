@@ -29,6 +29,7 @@ set(
     Buffer.cpp
     base/LogStream.cpp
     base/Logging.cpp
+    base/LogFile.cpp
 )
 
 set(UNIT_TEST ON)
