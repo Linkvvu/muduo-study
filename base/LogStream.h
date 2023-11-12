@@ -10,6 +10,9 @@ namespace base {
 
 namespace detail {
 
+const size_t kLargeBuffer = 4000*1024; 
+const size_t kSmallBuffer = 4000;
+
 template <int SIZE>
 class FixedBuffer {
     using size_t = std::size_t;
@@ -90,13 +93,10 @@ class LogStream {
     LogStream& operator=(const LogStream&) = delete;
 
 public:
-    static const size_t kLargeBuffer = 1024*1024; 
-    static const size_t kSmallBuffer = 1024;
-
 #ifdef MUDUO_LOG_LARGE_BUFFER
     using Buffer = detail::FixedBuffer<kLargeBuffer>;
 #else
-    using Buffer = detail::FixedBuffer<kSmallBuffer>;
+    using Buffer = detail::FixedBuffer<detail::kSmallBuffer>;
 #endif
 
     LogStream()

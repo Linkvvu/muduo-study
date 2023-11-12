@@ -160,10 +160,10 @@ TEST(LogStreamTests, Length) {
     LogStream log_stream;
     const auto& buf = log_stream.GetInternalBuf();
 
-    for (int i = 0; i < static_cast<int>(LogStream::kSmallBuffer) / 10; ++i) {
+    for (int i = 0; i < static_cast<int>(muduo::base::detail::kSmallBuffer) / 10; ++i) {
         log_stream << "123456789 ";
         EXPECT_EQ(buf.GetLength(), 10*(i+1));
-        EXPECT_EQ(buf.Avail(), LogStream::kSmallBuffer - 10*(i+1));
+        EXPECT_EQ(buf.Avail(), muduo::base::detail::kSmallBuffer - 10*(i+1));
     }
 }
 

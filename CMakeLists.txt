@@ -30,6 +30,7 @@ set(
     base/LogStream.cpp
     base/Logging.cpp
     base/LogFile.cpp
+    base/AsyncLogging.cpp
 )
 
 set(UNIT_TEST ON)

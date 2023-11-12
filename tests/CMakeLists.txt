@@ -44,3 +44,6 @@ target_link_libraries(Logging_unittest muduoNet "GTest::gtest" "GTest::gtest_mai
 
 add_executable(LogFile_unittest LogFile_unittest.cc)
 target_link_libraries(LogFile_unittest muduoNet)
+
+add_executable(AsyncLogging_unittest AsyncLogging_unittest.cc)
+target_link_libraries(AsyncLogging_unittest muduoNet)
