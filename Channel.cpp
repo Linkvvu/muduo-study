@@ -13,12 +13,12 @@ Channel::Channel(EventLoop* owner, int fd)
     : owner_(owner)
     , fd_(fd)
     , events_(kNoneEvent)
+    , logHup_(true)
+    , eventHandling_(false)
     , revents_(kNoneEvent)
     , index_(-1)
-    , logHup_(true)
-    , tie_()
     , tied_(false)
-    , eventHandling_(false)
+    , tie_()
     { }
 
 void Channel::HandleEvents(ReceiveTimePoint_t receiveTime) {
@@ -78,4 +78,25 @@ void Channel::Update() {
 void Channel::Remove() {
     assert(IsNoneEvent());
     owner_->RemoveChannel(this);
+}
+
+std::string muduo::Channel::EventToString(int fd, int ev) const {
+    std::ostringstream oss;
+    oss << fd << ": ";
+    if (ev & POLLIN)
+        oss << "IN ";
+    if (ev & POLLPRI)
+        oss << "PRI ";
+    if (ev & POLLOUT)
+        oss << "OUT ";
+    if (ev & POLLHUP)
+        oss << "HUP ";
+    if (ev & POLLRDHUP)
+        oss << "RDHUP ";
+    if (ev & POLLERR)
+        oss << "ERR ";
+    if (ev & POLLNVAL)
+        oss << "NVAL ";
+
+    return oss.str();
 }

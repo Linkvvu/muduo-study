@@ -1,6 +1,4 @@
 #include <EventLoop.h>
-#include <fmt/core.h>
-#include <fmt/ostream.h>
 #include <thread>
 #include <unistd.h>
 
@@ -16,40 +14,40 @@ extern void foo4();
 
 void foo1() {
     g_flag = 1;
-    fmt::println("foo1(): tid={0}, Flag={1}", fmt::streamed(std::this_thread::get_id()), g_flag);
+    LOG_INFO << "foo1(): tid=" << ::pthread_self() << ", Flag=" << g_flag;
     g_loop->RunInEventLoop(foo2);
     g_flag = 2;
 }
 
 void foo2() {
-    fmt::println("foo2(): tid={0}, Flag={1}", fmt::streamed(std::this_thread::get_id()), g_flag);
+    LOG_INFO << "foo2(): tid=" << ::pthread_self() << ", Flag=" << g_flag;
     g_loop->EnqueueEventLoop(foo3);
 }
 
 void foo3() {
-    fmt::println("foo3(): tid={0}, Flag={1}", fmt::streamed(std::this_thread::get_id()), g_flag);
+    LOG_INFO << "foo3(): tid=" << ::pthread_self() << ", Flag=" << g_flag;
     g_loop->RunAfter(std::chrono::seconds(3), foo4);
     g_flag = 3;
 }
 
 void foo4() {
-    fmt::println("foo4(): tid={0}, Flag={1}", fmt::streamed(std::this_thread::get_id()), g_flag);
+    LOG_INFO << "foo4(): tid=" << ::pthread_self() << ", Flag=" << g_flag;
     g_loop->Quit();
 }
 
 int main() {
-    fmt::println("main(): tid={0}, Flag={1}", fmt::streamed(std::this_thread::get_id()), g_flag);
+    LOG_INFO << "main(): tid=" << ::pthread_self() << ", Flag=" << g_flag;
     EventLoop loop;
     g_loop = EventLoop::GetCurrentThreadLoop();
 
     std::thread t(
         [&loop]() {
-            fmt::println("another thread: tid={0}, Flag={1}", fmt::streamed(std::this_thread::get_id()), g_flag);
+            LOG_INFO << "another thread: tid=" << ::pthread_self() << ", Flag=" << g_flag;
             loop.RunAfter(std::chrono::seconds(1), foo1);
-            fmt::println("another thread: tid={0}, Flag={1}, success to add task", fmt::streamed(std::this_thread::get_id()), g_flag);
+            LOG_INFO << "another thread: tid=" << ::pthread_self() << ", Flag=" << ", success to add task" << g_flag;
         }
     );
     t.join();
     loop.Loop();
-    fmt::println("main(): tid={0}, Flag={1}", fmt::streamed(std::this_thread::get_id()), g_flag);
+    LOG_INFO << "main(): tid=" << ::pthread_self() << ", Flag=" << g_flag;
 }

@@ -189,7 +189,7 @@ void MemPool::Pfree(void* p) {
 
 void MemPool::PresetPool() {
     /* free all large-blocks */
-    for (PLargeBlock* l; l != nullptr; l = l->next) {
+    for (PLargeBlock* l = large_; l != nullptr; l = l->next) {
         if (l->alloc) {
             base::free(l->alloc);
         }

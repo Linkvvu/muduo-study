@@ -48,23 +48,25 @@ int sockets::accept(int listener, struct sockaddr_in6* addr) {
     socklen_t len = static_cast<socklen_t>(sizeof *addr);
     int sockfd = ::accept4(listener, sockets::sockaddr_cast(addr), &len, SOCK_NONBLOCK|SOCK_CLOEXEC);
     if (sockfd < 0) {
+        int savederrno = errno;
         LOG_SYSERR << "sockets::accept";
-        switch (errno) {
+        switch (savederrno) {
         case EAGAIN:
         case EINTR:
         case ECONNABORTED:  // 连接中断
         case EPROTO:        // 协议不匹配
         case EPERM:         // e.g：连接被防火墙拦截
         case EMFILE:        // 超过 per-process limit of open file-descriptor count
+            errno = savederrno;
             break;
         case EBADF:
         case ENAVAIL:
         case ENFILE:        // OS已经没有可供打开的文件
         case ENOBUFS:
         case ENOMEM:
-            LOG_FATAL << "sockets::accept unexpected error, detail: " << strerror_thread_safe(errno);
+            LOG_FATAL << "sockets::accept unexpected error, detail: " << strerror_thread_safe(savederrno);
         default:
-            LOG_FATAL << "sockets::accept unknow error, detail: " << strerror_thread_safe(errno);
+            LOG_FATAL << "sockets::accept unknow error, detail: " << strerror_thread_safe(savederrno);
         }
     }
     return sockfd;

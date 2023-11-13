@@ -48,7 +48,9 @@ EventLoop* EventLoop::GetCurrentThreadLoop() {
 }
 
 void EventLoop::PrintActiveChannels() const {
-    
+    for (const Channel* channel : activeChannels_) {
+        LOG_TRACE << "<" << channel->REventsToString() << "> ";
+    }
 }
 
 void EventLoop::Loop() {
@@ -66,9 +68,9 @@ void EventLoop::Loop() {
         activeChannels_.clear();    // Clear the list for polling new channels
         receiveTimePoint_ = poller_->Poll(kPollTimeout, &activeChannels_);
         HandleActiveChannels();
-        // if (logger::logLevel() <= logger::LogLevel::TRACE) {
-        //     printActiveChannels();
-        // }
+        if (muduo::GetLoglevel() <= Logger::LogLevel::TRACE) {
+            PrintActiveChannels();
+        }
         HandlePendingCallbacks();
     }
     looping_ = false;

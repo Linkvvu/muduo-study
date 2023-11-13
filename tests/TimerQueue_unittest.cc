@@ -1,10 +1,10 @@
 #include <EventLoop.h>
-#include <fmt/ostream.h>
-#include <fmt/chrono.h>
 #include <functional>
+#include <sstream>
+#include <thread>
+#include <chrono>
 #include <pthread.h>
 #include <unistd.h>
-#include <thread>
 
 using namespace muduo;
 using namespace std::chrono;
@@ -12,13 +12,21 @@ using namespace std::chrono;
 int cnt = 0;
 EventLoop* g_loop;
 
+std::string getFormatedTime() {
+    std::ostringstream oss;
+    const auto now = std::chrono::system_clock::now();
+    const time_t now_time = std::chrono::system_clock::to_time_t(now);
+    oss << std::put_time(std::localtime(&now_time), "%Y-%m-%d %H:%M:%S");
+    return oss.str();
+}
+
 void printTid() {
-    fmt::print("pid = {0}, tid = {1}\n", getpid(), fmt::streamed(std::this_thread::get_id())); 
-    fmt::println("now {:%Y-%m-%d %H:%M:%S}", std::chrono::system_clock::now());  
+    LOG_INFO << "pid = " << getpid() << ", tid = " << ::pthread_self();
+    LOG_INFO << "now " << getFormatedTime();
 }
 
 void print(const char* msg) {
-    fmt::println("msg {:%Y-%m-%d %H:%M:%S}, {}", system_clock::now(), msg);
+    LOG_INFO << "msg " << getFormatedTime() << ", " << msg;
 
     if (++cnt == 20) {
         g_loop->Quit();
@@ -27,11 +35,11 @@ void print(const char* msg) {
 
 void cancel(TimerId_t timer) {
     g_loop->cancelTimer(timer);
-    fmt::println("cancelled at {:%Y-%m-%d %H:%M:%S}", std::chrono::system_clock::now()); 
+    LOG_INFO << "cancelled at " << getFormatedTime();
 }
 
 int main() {
-    fmt::println("native thread-id={}", ::pthread_self());
+    LOG_INFO << "native thread-id=" << ::pthread_self();
 
     printTid();
     sleep(1);

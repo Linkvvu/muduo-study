@@ -83,14 +83,18 @@ public:
     /**
      * for debug
     */
+    std::string EventTostring() const {
+        return EventToString(fd_, events_);
+    }
+
     std::string REventsToString() const {
-        // std::cout << "called Channel::REventsToString" << std::endl;
-        return "";
+        return EventToString(fd_, revents_);
     }
     
 private:
     void Update();
     void HandleEventsWithGuard(ReceiveTimePoint_t receiveTime);
+    std::string EventToString(int fd, int ev) const;
 
 private:
     EventLoop* owner_;  // 聚合关系 (1 channel only belong to 1 loop instance)

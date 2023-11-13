@@ -67,7 +67,7 @@ public:
         swap(timerList_[idx], timerList_.back());
         timerList_.pop_back();
         auto ret = positions_.erase(id);
-        assert(ret == 1);
+        assert(ret == 1); (void)ret;
         assert(timerList_.size() == positions_.size());
         // update position
         positions_[backTimer_id] = idx;
@@ -121,7 +121,7 @@ public:
             swap(timerList_.front(), timerList_.back());
             timerList_.pop_back();
             auto ret = positions_.erase(id);
-            assert(ret == 1);
+            assert(ret == 1); (void)ret;
             assert(timerList_.size() == positions_.size());
             positions_[timerList_.front()->GetId()] = 0;
             Adjust(0);
@@ -145,7 +145,7 @@ private:
             swap(timerList_.front(), timerList_.back());
             timerList_.pop_back();
             auto ret = positions_.erase(front_timer_id);
-            assert(ret == 1);
+            assert(ret == 1); (void)ret;
             assert(timerList_.size() == positions_.size());
             positions_[timerList_.front()->GetId()] = 0;
             Adjust(0);

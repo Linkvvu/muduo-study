@@ -42,7 +42,7 @@ void muduo::detail::PollPoller::UpdateChannel(Channel* c) {
     } else { // 当前channel已存在，更新当前channel
         assert(channels_.find(c->FileDescriptor()) != channels_.end());
         assert(channels_[c->FileDescriptor()] == c);
-        assert(c->Index() >= 0 && c->Index() < pollfds_.size());
+        assert(c->Index() >= 0 && static_cast<size_t>(c->Index()) < pollfds_.size());
         struct pollfd* pfd = &pollfds_[c->Index()]; 
         pfd->events = static_cast<decltype(pollfd::events)>(c->CurrentEvent());
         pfd->revents = 0;
@@ -63,7 +63,7 @@ void muduo::detail::PollPoller::RemoveChannel(Channel* c) {
     assert(channels_.find(c->FileDescriptor()) != channels_.end());
     assert(channels_[c->FileDescriptor()] == c);
     assert(c->IsNoneEvent()); // NOTE:只有当前channel不关注任何事件才可以被从pollfds_中remove
-    assert(c->Index() >= 0 && c->Index() < pollfds_.size());
+    assert(c->Index() >= 0 && static_cast<size_t>(c->Index()) < pollfds_.size());
     assert(pollfds_[c->Index()].fd == -(c->FileDescriptor())-1);
 
     // remove the channel from channel-list

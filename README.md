@@ -7,22 +7,25 @@ the Reactor pattern.
 # Quick Start
 ## Requires
 * cpp-17 (for std::any only)
+* Boost (for Endian-conversion only)
 * GTest (if need to compile unit tests)
 ## Compile
 ``` bash
-mkdir build && cd build
-cmake .. (-DUNIT_TEST=ON)
-make && make install
+# If need to compile test files, 
+# define environment variable "MUDUO_UNIT_TESTS=ON"
+
+# See build.sh for details
+bash build.sh
 ```
 # Introduction
 * event-driven mode
 * multithreaded-Reactor + threadPool(optional) mode
 * one EventLoop per thread & non-blocking IO
-* based on callback
-* Asynchronous logger
+* base on callback
+* support asynchronous logger
 # TODO(optimize):
-- [x] 使用cpp11-17新特性
 - [x] 使用priority-queue重构定时器队列 
-- [x] 使用RAII, 避免显式的new/delete
-- [x] 封装*eventfd(2)* class，尽可能实现高内聚、低耦合
+- [x] 项目遵从"RAII"思想, 避免显式的new/delete
 - [x] 新增连接级内存池
+- [x] 尽可能地使用C++11-17特性
+- [x] 尽可能地实现高内聚、低耦合

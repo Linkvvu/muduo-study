@@ -63,7 +63,7 @@ void TcpServer::RemoveConnectionInLoop(const TcpConnectionPtr& conn) {
     loop_->AssertInLoopThread();
     assert(conn.use_count() > 1);
     int ret = conns_.erase(conn->GetName());
-    assert(ret == 1);
+    assert(ret == 1); (void)ret;
     conn->GetEventLoop()->RunInEventLoop(std::bind(&TcpConnection::StepIntoDestroyed, conn));
 }
 
