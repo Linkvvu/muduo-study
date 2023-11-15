@@ -1,10 +1,10 @@
 #if !defined(MUDUO_TCPCONNECTION_H)
 #define MUDUO_TCPCONNECTION_H
 
-#include <Buffer.h>
-#include <InetAddr.h>
-#include <TcpServer.h>  // for declare friend
-#include <Callbacks.h>
+#include <muduo/Buffer.h>
+#include <muduo/InetAddr.h>
+#include <muduo/TcpServer.h>  // for declare friend
+#include <muduo/Callbacks.h>
 #include <functional>
 #include <memory>
 #include <string>
