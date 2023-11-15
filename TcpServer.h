@@ -1,5 +1,6 @@
 #if !defined(MUDUO_TCPSERVER_H)
 #define MUDUO_TCPSERVER_H
+#include <InetAddr.h>
 #include <Callbacks.h>
 #include <unordered_map>
 #include <atomic>
