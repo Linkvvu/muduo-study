@@ -62,4 +62,29 @@ endif()
 add_library(muduoNet ${MUDUO_NET})
 target_link_libraries(muduoNet pthread)
 
-install(TARGETS muduoNet DESTINATION ./lib)
+set(
+  HEADERS
+  Buffer.h
+  Callbacks.h
+  Channel.h
+  EventLoop.h
+  EventLoopThread.h
+  EventLoopThreadPool.h
+  InetAddr.h
+  TcpConnection.h
+  TcpServer.h
+  TimerType.h
+)
+
+set(
+  BASE_HEADERS
+  base/AsyncLogging.h
+  base/Endian.h
+  base/LogFile.h
+  base/Logging.h
+  base/LogStream.h
+)
+
+install(FILES ${HEADERS} DESTINATION include/muduo)
+install(FILES ${BASE_HEADERS} DESTINATION include/muduo/base)
+install(TARGETS muduoNet DESTINATION lib)
