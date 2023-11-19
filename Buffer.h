@@ -1,5 +1,6 @@
 #if !defined(MUDUO_BUFFER_H)
 #define MUDUO_BUFFER_H
+#include <muduo/base/Endian.h>
 #include <vector>
 #include <cassert>
 #include <string>
@@ -86,6 +87,11 @@ public:
         HasWritten(len);
     }
 
+    void Append(const void* data, size_t len)
+    {
+        Append(static_cast<const char*>(data), len);
+    }
+
     void Append(const std::string& s)
     { Append(s.c_str(), s.size()); }
 
@@ -109,6 +115,152 @@ public:
     /// It may implement with readv(2)
     /// @return result of read(2), @c errno is saved
     ssize_t ReadFd(int fd, int* savedErrno);
+
+
+    /* short-cuts */
+
+    void RetrieveInt64() 
+    { Retrieve(sizeof(int64_t)); }
+
+    void RetrieveInt32() 
+    { Retrieve(sizeof(int32_t)); }
+
+    void RetrieveInt16()
+    { Retrieve(sizeof(int16_t)); }
+
+    void RetrieveInt8()
+    { Retrieve(sizeof(int8_t)); }
+
+    ///
+    /// Append int64_t using network endian
+    ///
+    void AppendInt64(int64_t x) {
+        int64_t be64 = base::endian::NativeToBig(x);
+        Append(&be64, sizeof be64);
+    }
+
+    ///
+    /// Append int32_t using network endian
+    ///
+    void AppendInt32(int32_t x) {
+        int32_t be32 = base::endian::NativeToBig(x);
+        Append(&be32, sizeof be32);
+    }
+
+    void AppendInt16(int16_t x)
+    {
+        int16_t be16 = base::endian::NativeToBig(x);
+        Append(&be16, sizeof be16);
+    }
+
+    void AppendInt8(int8_t x)
+    {
+        Append(&x, sizeof x);
+    }
+
+    ///
+    /// Peek int64_t from network endian
+    ///
+    /// Require: buf->readableBytes() >= sizeof(int64_t)
+    int64_t PeekInt64() const
+    {
+        assert(ReadableBytes() >= sizeof(int64_t));
+        int64_t be64 = 0;
+        ::memcpy(&be64, Peek(), sizeof be64);
+        return base::endian::BigToNative(be64);
+    }
+
+    ///
+    /// Peek int32_t from network endian
+    ///
+    /// Require: buf->readableBytes() >= sizeof(int32_t)
+    int32_t PeekInt32() const
+    {
+        assert(ReadableBytes() >= sizeof(int32_t));
+        int32_t be32 = 0;
+        ::memcpy(&be32, Peek(), sizeof be32);
+        return base::endian::BigToNative(be32);
+    }
+
+    int16_t PeekInt16() const
+    {
+        assert(ReadableBytes() >= sizeof(int16_t));
+        int16_t be16 = 0;
+        ::memcpy(&be16, Peek(), sizeof be16);
+        return base::endian::BigToNative(be16);
+    }
+
+    int8_t PeekInt8() const
+    {
+        assert(ReadableBytes() >= sizeof(int8_t));
+        int8_t x = *Peek();
+        return x;
+    }
+
+    ///
+    /// Read int64_t from network endian
+    ///
+    /// Require: buf->readableBytes() >= sizeof(int32_t)
+    int64_t ReadInt64()
+    {
+        int64_t result = PeekInt64();
+        RetrieveInt64();
+        return result;
+    }
+
+    ///
+    /// Read int32_t from network endian
+    ///
+    /// Require: buf->readableBytes() >= sizeof(int32_t)
+    int32_t ReadInt32()
+    {
+        int32_t result = PeekInt32();
+        RetrieveInt32();
+        return result;
+    }
+
+    int16_t ReadInt16()
+    {
+        int16_t result = PeekInt16();
+        RetrieveInt16();
+        return result;
+    }
+
+    int8_t ReadInt8()
+    {
+        int8_t result = PeekInt8();
+        RetrieveInt8();
+        return result;
+    }
+
+    ///
+    /// Prepend int64_t using network endian
+    ///
+    void PrependInt64(int64_t x)
+    {
+        int64_t be64 = base::endian::NativeToBig(x);
+        Prepend(&be64, sizeof be64);
+    }
+
+    ///
+    /// Prepend int32_t using network endian
+    ///
+    void PrependInt32(int32_t x)
+    {
+        int32_t be32 = base::endian::NativeToBig(x);
+        Prepend(&be32, sizeof be32);
+    }
+
+    void PrependInt16(int16_t x)
+    {
+        int16_t be16 = base::endian::NativeToBig(x);
+        Prepend(&be16, sizeof be16);
+    }
+
+    void PrependIntInt8(int8_t x)
+    {
+        Prepend(&x, sizeof x);
+    }
 
 private:
     const char* Begin() const

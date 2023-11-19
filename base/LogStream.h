@@ -29,14 +29,6 @@ public:
         cur_ += buf.GetLength();
     }
 
-    FixedBuffer(FixedBuffer&& buf) {
-        data_ = buf.data_;
-        data_ = buf.cur_;
-
-        buf.data_ = nullptr;
-        buf.cur_ = nullptr;
-    }
-
     const char* Data() const
     { return data_; }
 

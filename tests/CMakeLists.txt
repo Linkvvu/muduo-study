@@ -1,10 +1,5 @@
 find_package(GTest REQUIRED)
 
-message(STATUS "Will compile unit-tests.")
-
-add_executable(thread_local_unittest thread_local.cc)
-target_link_libraries(thread_local_unittest pthread)
-
 add_executable(TimerQueue_unittest TimerQueue_unittest.cc)
 target_link_libraries(TimerQueue_unittest "muduoNet")
 

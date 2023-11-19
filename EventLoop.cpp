@@ -67,10 +67,10 @@ void EventLoop::Loop() {
     while (!quit_) {
         activeChannels_.clear();    // Clear the list for polling new channels
         receiveTimePoint_ = poller_->Poll(kPollTimeout, &activeChannels_);
-        HandleActiveChannels();
         if (muduo::GetLoglevel() <= Logger::LogLevel::TRACE) {
             PrintActiveChannels();
         }
+        HandleActiveChannels();
         HandlePendingCallbacks();
     }
     looping_ = false;

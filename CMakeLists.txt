@@ -1,31 +1,52 @@
 cmake_minimum_required(VERSION 3.5)
 
-project(muduo)
+project(muduo CXX)
 
-string(TOUPPER ${CMAKE_BUILD_TYPE} BUILD_TYPE)
-
-if(NOT BUILD_TYPE)
-  set(CMAKE_BUILD_TYPE "Release")
-  set(BUILD_TYPE "RELEASE")
-  set(CMAKE_CXX_FLAGS_RELEASE "-O2 -DNDEBUG")
-elseif(BUILD_TYPE STREQUAL "DEBUG")
-  set(CMAKE_CXX_FLAGS_DEBUG "-O0 -g")
+if(NOT CMAKE_BUILD_TYPE)
+  set(CMAKE_BUILD_TYPE Release STRINGS)
 endif()
 
-message(STATUS BUILD_TYPE=${BUILD_TYPE})
+message(STATUS "Current BUILD_TYPE=${CMAKE_BUILD_TYPE}")
 
-set(CMAKE_CXX_STANDARD "17")
+if(CMAKE_PROJECT_NAME STREQUAL "muduo")
+  option(MUDUO_UNIT_TESTS "Build unit-tests of muduo" ON)
+endif()
+
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
-set(CMAKE_CXX_FLAGS "-Wall")
-set(EXECUTABLE_OUTPUT_PATH "${PROJECT_BINARY_DIR}/bin")
-set(LIBRARY_OUTPUT_PATH "${PROJECT_BINARY_DIR}/lib")
+set(CMAKE_CXX_STANDARD 17)
 
+set(CMAKE_CXX_FLAGS "-Wall")
+
+set(CMAKE_CXX_FLAGS_DEBUG "-g -O0")
+
+# Define NDEBUG when compile whith g++
+set(CMAKE_CXX_FLAGS_RELEASE "-O3 -DNDEBUG")
+
+# Set graceful project layout
+include(GNUInstallDirs)
+# Set the output path for binary for build-tree
+set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/${CMAKE_INSTALL_BINDIR})
+# Set the output path for static libary for build-tree
+set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/${CMAKE_INSTALL_LIBDIR})
+# Set the output path for dynamic libary for build-tree
+set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/${CMAKE_INSTALL_LIBDIR})
+
+# print current compile flags
+string(TOUPPER ${CMAKE_BUILD_TYPE} CMAKE_BUILD_TYPE_UPPER)
+string(REPLACE ";" " " CXX_FLAGS_LIST "${CMAKE_CXX_FLAGS}")
+string(REPLACE ";" " " CXX_FLAGS_${CMAKE_BUILD_TYPE_UPPER}_LIST "${CMAKE_CXX_FLAGS_${CMAKE_BUILD_TYPE_UPPER}}")
+message(STATUS "CXX_FLAGS = " ${CXX_FLAGS_LIST} " " ${CXX_FLAGS_${CMAKE_BUILD_TYPE_UPPER}_LIST})
+
+# search required package
 find_package(Boost REQUIRED)
+
+# include required directory of header
 include_directories(${CMAKE_SOURCE_DIR}/..)
 include_directories(${Boost_INCLUDE_DIRS})
 
+# collect sources
 set(
-    MUDUO_NET
+    MUDUO_NET_SOURCES
     EventLoop.cpp
     Poller.cpp
     Channel.cpp
@@ -49,21 +70,24 @@ set(
     base/AsyncLogging.cpp
 )
 
-message(STATUS "CXX_FLAGS = " ${CMAKE_CXX_FLAGS} " " ${CMAKE_CXX_FLAGS_${BUILD_TYPE}})
+# make library
+add_library(muduoNet STATIC ${MUDUO_NET_SOURCES})
+set_target_properties( 
+  muduoNet
+    PROPERTIES 
+    OUTPUT_NAME muduo
+)
+target_link_libraries(muduoNet PUBLIC pthread)
 
-if(MUDUO_UNIT_TESTS STREQUAL "ON" OR
-      MUDUO_UNIT_TESTS STREQUAL "On" OR
-      MUDUO_UNIT_TESTS STREQUAL "on" OR
-      MUDUO_UNIT_TESTS STREQUAL "yes" OR
-      MUDUO_UNIT_TESTS STREQUAL "y")
-  add_subdirectory(${CMAKE_SOURCE_DIR}/tests)
+# compile unit-tests
+if(MUDUO_UNIT_TESTS)
+  add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/tests)
+  message(STATUS "Will compile unit-tests.")
 endif()
 
-add_library(muduoNet ${MUDUO_NET})
-target_link_libraries(muduoNet pthread)
-
+# install
 set(
-  HEADERS
+  PUB_HEADERS
   Buffer.h
   Callbacks.h
   Channel.h
@@ -77,7 +101,7 @@ set(
 )
 
 set(
-  BASE_HEADERS
+  PUB_BASE_HEADERS 
   base/AsyncLogging.h
   base/Endian.h
   base/LogFile.h
@@ -85,6 +109,6 @@ set(
   base/LogStream.h
 )
 
-install(FILES ${HEADERS} DESTINATION include/muduo)
-install(FILES ${BASE_HEADERS} DESTINATION include/muduo/base)
-install(TARGETS muduoNet DESTINATION lib)
+install(FILES ${PUB_HEADERS} DESTINATION include/muduo)
+install(FILES ${PUB_BASE_HEADERS} DESTINATION include/muduo/base)
+install(TARGETS muduoNet) # DESTINATION ${CMAKE_INSTALL_LIBDIR}
