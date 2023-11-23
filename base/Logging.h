@@ -5,17 +5,18 @@
 #include <cstring>
 #include <iomanip>
 #include <pthread.h>
+#include <functional>
 
 namespace muduo {
 
 class Logger {
 public:
-    using OutputHandler = void(*)(const char* data, size_t len);
-    using FlushHandler = void(*)();
+    using OutputHandler = std::function<void(const char*, size_t)>;
+    using FlushHandler = std::function<void()>;
 
     struct SourceFile {
         /* 非类型模板参数，compile-time确定数组大小 */
-        /* const char (&arr)[N] 表示 const char数组的引用*/
+        /* const char (&arr)[N] 表示 const char数组的引用 */
         /* 避免数组名退化为指针，从而保留数组的大小信息 */
         template <int N>
         SourceFile(const char (&arr)[N])

@@ -68,6 +68,7 @@ set(
     base/Logging.cpp
     base/LogFile.cpp
     base/AsyncLogging.cpp
+    base/ThreadPool.cpp
 )
 
 # make library
@@ -107,6 +108,7 @@ set(
   base/LogFile.h
   base/Logging.h
   base/LogStream.h
+  base/ThreadPool.h
 )
 
 install(FILES ${PUB_HEADERS} DESTINATION include/muduo)

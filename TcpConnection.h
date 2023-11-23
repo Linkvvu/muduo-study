@@ -68,12 +68,15 @@ public:
     /// Thread-safe, can call cross-thread
     void Shutdown();
     
+    /// Thread-safe, can call cross-thread
     void Send(const std::string& s)
     { Send(s.c_str(), s.size()); }
     
+    /// Thread-safe, can call cross-thread
     void Send(const void* buf, size_t len)
     { Send(static_cast<const char*>(buf), len); }
 
+    /// Thread-safe, can call cross-thread
     void Send(const char* buf, size_t len);
 
 private:

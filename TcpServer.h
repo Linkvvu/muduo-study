@@ -24,9 +24,16 @@ public:
     ~TcpServer() noexcept;  // force out-line dtor, for std::unique_ptr members.
     std::string GetIp() const;
     std::string GetIpPort() const;
+
+    /// start io-threads and listening 
+    /// @note Enables cross-thread invocation and utilizes Compare-and-Swap (CAS) internally,
+    /// allowing for multiple invocations.
     void ListenAndServe();
 
+    /// must call before TcpServer::ListenAndServe
     void SetIoThreadNum(int n);
+
+    /// must call before TcpServer::ListenAndServe
     void SetIothreadInitCallback(const IoThreadInitCallback_t& cb);
 
     void SetConnectionCallback(const ConnectionCallback_t& cb)

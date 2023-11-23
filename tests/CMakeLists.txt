@@ -41,3 +41,6 @@ target_link_libraries(LogFile_unittest muduoNet)
 
 add_executable(AsyncLogging_unittest AsyncLogging_unittest.cc)
 target_link_libraries(AsyncLogging_unittest muduoNet)
+
+add_executable(ThreadPool_unittest ThreadPool_unittest.cc)
+target_link_libraries(ThreadPool_unittest muduoNet)
