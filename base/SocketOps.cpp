@@ -172,7 +172,7 @@ void sockets::address::fromIpPort(const char* ip, uint16_t port, struct sockaddr
     } else if (ret == 0) {
         LOG_WARN << "invalid character string for ip(" << ip << ")";
     } else {
-        assert(ret == 0);   // Represent success
+        assert(ret == 1);   // Represent success
     }
 }
 
@@ -186,7 +186,7 @@ void sockets::address::fromIpPort(const char* ip, uint16_t port, struct sockaddr
     } else if (ret == 0) {
         LOG_WARN << "invalid character string for ip(" << ip << ")";
     } else {
-        assert(ret == 0);   // Represent success
+        assert(ret == 1);   // Represent success
     }
 }
 
