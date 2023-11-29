@@ -10,7 +10,7 @@ add_executable(EventLoopThread_unittest EventLoopThread_unittest.cc)
 target_link_libraries(EventLoopThread_unittest "pthread" "muduoNet")
 
 add_executable(EventLoopThreadPool_unittest EventLoopThreadPool_unittest.cc)
-target_link_libraries(EventLoopThreadPool_unittest "muduoNet" "GTest::gtest" "GTest::gmock_main")
+target_link_libraries(EventLoopThreadPool_unittest "muduoNet" GTest::gmock GTest::gtest)
 
 add_executable(Endian_unittest Endian_unittest.cc)
 target_link_libraries(Endian_unittest "GTest::gtest" "GTest::gtest_main")

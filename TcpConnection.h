@@ -105,7 +105,7 @@ private:
     InetAddr localAddr_;
     InetAddr remoteAddr_;
     std::atomic<State> state_ {connecting};
-    std::any context_ {nullptr};  // C++ 17
+    std::any context_ {};  // C++ 17
     ConnectionCallback_t connectionCb_ {nullptr};
     MessageCallback_t onMessageCb_ {nullptr};
     CloseCallback_t onCloseCb_ {nullptr};   // invoke TcpServer::RemoveConnection of Associated TCP-Server
