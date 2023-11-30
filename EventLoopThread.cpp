@@ -6,7 +6,7 @@ EventLoopThread::EventLoopThread(const IoThreadInitCallback_t& cb, const std::st
     : loop_(nullptr)
     , name_(n)
     , initCb_(cb)
-    , IoThread_()
+    , IoThread_(nullptr)
     , isExit_(false)
     , mtx_()
     , cv_()
@@ -22,12 +22,14 @@ EventLoopThread::~EventLoopThread() noexcept {
 
 EventLoop* EventLoopThread::Run() {
     // TcpServer::ListenAndServe use CAS, So it's no longer needed here
-    assert(IoThread_.joinable() == false);
+    assert(IoThread_.get() == nullptr);
     
-    std::thread tmp(std::bind(&EventLoopThread::ThreadFunc, this));
-    IoThread_.swap(tmp);
-    assert(IoThread_.joinable());
-    IoThread_.detach();
+    IoThread_.reset(new std::thread([this]() {
+        this->ThreadFunc();
+    }));
+
+    assert(IoThread_->joinable());
+    IoThread_->detach();
 
     EventLoop* res = nullptr;
     {

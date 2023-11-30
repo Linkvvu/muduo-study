@@ -80,7 +80,7 @@ bool LogFile::RoolFile() {
 
 void LogFile::Append(const char* logline, size_t size) {
     if (mutex_) {
-        std::lock_guard guard(*mutex_);
+        std::lock_guard<std::mutex> guard(*mutex_);
         AppendUnlocked(logline, size);
     } else {
         AppendUnlocked(logline, size);
@@ -112,7 +112,7 @@ void muduo::base::LogFile::AppendUnlocked(const char* logline, size_t size) {
             if (current_start_of_period != latestStartOfPeriod_) {   // has arrived specified period
                 RoolFile();
             } else if (now - lastFlush_ > flushInterval_) {         // timeout - has arrived specified flush interval
-                Flush();
+                file_->Flush();
             } 
         }
     }

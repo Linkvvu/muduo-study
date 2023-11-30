@@ -27,7 +27,7 @@ private:
     EventLoop* loop_;   // EventLoop instance of IO-thread
     std::string name_;
     IoThreadInitCallback_t initCb_;
-    std::thread IoThread_;              // current IO-thread
+    std::unique_ptr<std::thread> IoThread_;              // current IO-thread
     bool isExit_;                       // The state dicates whether IO thread exits 
     /* for sync operations on loop_ */
     std::mutex mtx_;

@@ -70,14 +70,14 @@ private:
         void FormatCurTime() {
             const auto now = std::chrono::system_clock::now();
             const time_t time = std::chrono::system_clock::to_time_t(now);
-            const auto tm = std::localtime(&time);
+            const auto cur_tm = *std::localtime(&time);
             std::ostringstream out_stream;
             // year-month-day hour:minute:seconds
-            out_stream << std::put_time(tm, "%Y-%m-%d %H:%M:%S");
+            out_stream << std::put_time(&cur_tm, "%Y-%m-%d %H:%M:%S");
             const auto now_ms = std::chrono::time_point_cast<std::chrono::milliseconds>(now);
             // get 3 bit ms
-            auto ms = now_ms.time_since_epoch() % 1000;
-            out_stream << '.' << std::setfill('0') << std::setw(3) << ' ';
+            const auto ms = now_ms.time_since_epoch().count() % 1000;
+            out_stream << '.' << std::setfill('0') << std::setw(3) << ms << ' ';
 
             // append to stream
             stream_ << out_stream.str();
