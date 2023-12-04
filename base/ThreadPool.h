@@ -61,7 +61,7 @@ private:
     std::vector<std::unique_ptr<std::thread>> pool_ {};
 
     std::deque<Task_t> taskQueue_ {};
-    size_t maxQueueSize_;
+    size_t maxQueueSize_ {0};
     mutable std::mutex mutex_ {};
     std::condition_variable notEmptyCv_ {};
     std::condition_variable notFullCv_ {};

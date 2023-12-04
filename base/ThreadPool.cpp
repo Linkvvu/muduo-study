@@ -67,7 +67,6 @@ void ThreadPool::ThreadFunc() {
 bool ThreadPool::IsFull() const {
     // assert that mutex is locked currently
     assert(mutex_.try_lock() == false);
-    assert(taskQueue_.size() <= maxQueueSize_);
     return maxQueueSize_ > 0 && taskQueue_.size() == maxQueueSize_;
 }
 
