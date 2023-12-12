@@ -1,6 +1,7 @@
 #include <muduo/Socket.h>
 #include <muduo/base/SocketOps.h>
 #include <muduo/base/Logging.h>
+#include <netinet/tcp.h>
 
 using namespace muduo;
 
@@ -29,6 +30,14 @@ void Socket::SetReuseAddr(bool on) {
     int ret = ::setsockopt(sockfd_, SOL_SOCKET, SO_REUSEADDR, &on, static_cast<socklen_t>(sizeof optval));
     if (ret < 0) {
         LOG_SYSERR << "Socket::SetReusePort"; 
+    }
+}
+
+void muduo::Socket::SetTcpNoDelay(bool on) {
+    int optval = on ? 1 : 0;
+    int ret = ::setsockopt(sockfd_, IPPROTO_TCP, TCP_NODELAY, &on, static_cast<socklen_t>(sizeof optval));
+    if (ret < 0) {
+        LOG_SYSERR << "Socket::SetTcpNoDelay"; 
     }
 }
 

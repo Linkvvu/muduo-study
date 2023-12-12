@@ -25,6 +25,7 @@ public:
     void BindInetAddr(const InetAddr& addr);
     void SetReusePort(bool on);
     void SetReuseAddr(bool on);
+    void SetTcpNoDelay(bool on);
     int Accept(InetAddr* addr);
     void ShutdownWrite();
         

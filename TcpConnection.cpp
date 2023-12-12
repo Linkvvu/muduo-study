@@ -72,6 +72,10 @@ TcpConnection::~TcpConnection() noexcept {
     assert(state_ == disconnected);
 }
 
+void muduo::TcpConnection::SetTcpNoDelay(bool on) {
+    socket_->SetTcpNoDelay(on);
+}
+
 void TcpConnection::StepIntoEstablished() {
     loop_->AssertInLoopThread();
     assert(state_ == connecting);
