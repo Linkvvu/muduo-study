@@ -1,5 +1,6 @@
 #include <muduo/EventLoop.h>
 #include <muduo/EventLoopThread.h>
+
 using namespace muduo;
 
 EventLoopThread::EventLoopThread(const IoThreadInitCallback_t& cb, const std::string& n)
@@ -13,10 +14,11 @@ EventLoopThread::EventLoopThread(const IoThreadInitCallback_t& cb, const std::st
     { }
 
 EventLoopThread::~EventLoopThread() noexcept {
-    std::lock_guard<std::mutex> guard(mtx_);
     isExit_ = true;
     if (loop_ != nullptr) {
         loop_->Quit();  // 通知loop结束循环
+        assert(IoThread_->joinable());
+        IoThread_->join();
     }
 }
 
@@ -27,9 +29,6 @@ EventLoop* EventLoopThread::Run() {
     IoThread_.reset(new std::thread([this]() {
         this->ThreadFunc();
     }));
-
-    assert(IoThread_->joinable());
-    IoThread_->detach();
 
     EventLoop* res = nullptr;
     {
