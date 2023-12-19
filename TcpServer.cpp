@@ -1,3 +1,4 @@
+#include <muduo/base/allocator/sgi_stl_alloc.h>
 #include <muduo/EventLoopThreadPool.h>
 #include <muduo/base/SocketOps.h>
 #include <muduo/TcpConnection.h>
@@ -44,7 +45,18 @@ void TcpServer::HandleNewConnection(int connfd, const InetAddr& remote_addr) {
     InetAddr local_addr(sockets::getLocalAddr(connfd));
     EventLoop* cur_loop = ioThreadPool_->GetNextLoop();
 
-    TcpConnectionPtr new_conn_ptr = std::make_shared<TcpConnection>(cur_loop, std::move(new_conn_name), connfd, local_addr, remote_addr);
+    TcpConnectionPtr new_conn_ptr;
+    if (loop_->GetMemoryPool()) {
+        // be allocated from memory pool
+        new_conn_ptr = std::allocate_shared<TcpConnection, base::alloctor<TcpConnection>>(
+            base::alloctor<TcpConnection>(loop_->GetMemoryPool()),
+            cur_loop, std::move(new_conn_name), connfd, local_addr, remote_addr
+        );
+    } else {
+        // be allocated from heap
+        new_conn_ptr = std::make_shared<TcpConnection>(cur_loop, std::move(new_conn_name), connfd, local_addr, remote_addr);
+    }
+
     LOG_INFO << "TcpServer::HandleNewConnection: new connection [" << new_conn_name << "] from " << remote_addr.GetIpPort();
     conns_[new_conn_name] = new_conn_ptr;   // add current connection to list
     new_conn_ptr->SetConnectionCallback(connectionCb_);

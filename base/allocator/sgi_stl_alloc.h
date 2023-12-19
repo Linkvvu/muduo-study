@@ -16,11 +16,20 @@ public:
     /// The type traits Required by STL Allocator standard
     using value_type = T;
 
-    simple_allocator(Alloc* alloc) 
-        : alloc_(alloc)
+    simple_allocator() = delete;
+
+    /// 为满足分配器传播机制的构造函数
+    template <typename V>
+    simple_allocator(const simple_allocator<V, Alloc>& another)
+        : alloc_(another.alloc_)
         { }
 
-    simple_allocator() = delete;
+    simple_allocator(Alloc* alloc) 
+            : alloc_(alloc)
+        { }
+    
+    simple_allocator(const simple_allocator&) = default;
+    simple_allocator& operator=(const simple_allocator&) = default;
 
     /// The interface Required by standard STL Allocator
     /// @param n The number of elements to be allocated
@@ -33,8 +42,7 @@ public:
         if (n != 0)
             alloc_->deallocate(ptr, n * sizeof(T));
     }
-
-private:
+    
     Alloc* alloc_;  // Aggregation
 };
 

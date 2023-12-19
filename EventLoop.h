@@ -41,6 +41,10 @@ class EventLoop {
 public:
     using ReceiveTimePoint_t = std::chrono::system_clock::time_point;
     using TimeoutDuration_t = std::chrono::milliseconds;
+    
+private:
+    static const TimeoutDuration_t kPollTimeout;
+
 public:
     /// Use muduo::base::MemoryPool to alloacte store space 
     /// @note The method will hide the global operator new for this class
@@ -61,10 +65,7 @@ public:
     /// Explicitly declare @c EventLoop::operator delete(), uses the global delete operator
     static void operator delete(void* p)
     { ::operator delete(p); }
-
-private:
-    static const TimeoutDuration_t kPollTimeout;
-public:
+    
     /// @brief Factory pattern
     /// @return A EventLoop instance within muduo::base::memory_pool 
     static std::unique_ptr<EventLoop, EventLoop::deleter_t> Create();
@@ -132,6 +133,10 @@ public:
     */
     void RunInEventLoop(const PendingEventCb_t& cb);
     
+    base::MomoryPool* GetMemoryPool() {
+        return memPool_;
+    }
+
 public:
     static EventLoop* GetCurrentThreadLoop();
 
