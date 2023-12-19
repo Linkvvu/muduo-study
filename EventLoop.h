@@ -1,5 +1,6 @@
 #if !defined(MUDUO_EVENTLOOP_H)
 #define MUDUO_EVENTLOOP_H
+#include <muduo/base/allocator/mem_pool.h>
 #include <muduo/base/Logging.h>
 #include <muduo/TimerType.h>
 #include <muduo/Callbacks.h>
@@ -30,17 +31,49 @@ namespace {
 
 namespace muduo {
     using namespace detail;
+
 class EventLoop {
+    /// Construct with memory pool, prevent create on stack 
+    EventLoop(base::MomoryPool* pool);
+    /// noncopyable & nonmoveable
+    EventLoop(const EventLoop&) = delete;
+    
 public:
     using ReceiveTimePoint_t = std::chrono::system_clock::time_point;
     using TimeoutDuration_t = std::chrono::milliseconds;
+public:
+    /// Use muduo::base::MemoryPool to alloacte store space 
+    /// @note The method will hide the global operator new for this class
+    static void* operator new(size_t size, base::MomoryPool* pool);
+
+    /// @brief The method corresponds to @c EventLoop::operator new(size_t size, base::MomoryPool* pool),
+    /// Only will be invoked When EventLoop::constructors throws a excepction
+    /// @note The method will hide the global operator delete for this class
+    static void operator delete(void* p, base::MomoryPool* pool);
+
+    /// @brief 由内存池构造的EventLoop的实例的"删除器"类型
+    using deleter_t = std::function<void(EventLoop* loop)>; 
+
+    /// Explicitly declare @c EventLoop::operator new(), uses the global new operator
+    static void* operator new(size_t size)
+    { return ::operator new(size); }
+
+    /// Explicitly declare @c EventLoop::operator delete(), uses the global delete operator
+    static void operator delete(void* p)
+    { ::operator delete(p); }
+
 private:
     static const TimeoutDuration_t kPollTimeout;
 public:
+    /// @brief Factory pattern
+    /// @return A EventLoop instance within muduo::base::memory_pool 
+    static std::unique_ptr<EventLoop, EventLoop::deleter_t> Create();
+
+    /// @brief Default constructor
+    /// @return A EventLoop instance, don't use muduo::base::memory_pool 
     EventLoop();
+
     ~EventLoop();
-    /// noncopyable & nonmoveable
-    EventLoop(const EventLoop&) = delete;
 
     /// @brief Must be called in the same thread as creation of the object.
     void Loop();
@@ -116,6 +149,8 @@ private:
     void HandlePendingCallbacks();
 
 private:
+    base::MomoryPool* memPool_;  // Loop-level memory pool hanlde
+
     const pthread_t threadId_;
     bool looping_;
     std::atomic_bool quit_ { false };
@@ -134,6 +169,11 @@ private:
     std::atomic_bool callingPendingCbs_;
 };
     
+/// Factory pattern
+inline std::unique_ptr<EventLoop, EventLoop::deleter_t> CreateEventLoop() {
+    return EventLoop::Create();
+}
+
 } // namespace muduo 
 
 #endif // MUDUO_EVENTLOOP_H

@@ -44,3 +44,9 @@ target_link_libraries(AsyncLogging_unittest muduoNet)
 
 add_executable(ThreadPool_unittest ThreadPool_unittest.cc)
 target_link_libraries(ThreadPool_unittest muduoNet)
+
+add_executable(Allocator_unittest Allocator_unittest.cc ${CMAKE_SOURCE_DIR}/base/allocator/mem_pool.cpp)
+target_link_libraries(Allocator_unittest)
+
+add_executable(LoopWithMemPool LoopWithMemPool.cc)
+target_link_libraries(LoopWithMemPool muduoNet)

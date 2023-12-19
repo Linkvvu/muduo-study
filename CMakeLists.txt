@@ -69,6 +69,7 @@ set(
     base/LogFile.cpp
     base/AsyncLogging.cpp
     base/ThreadPool.cpp
+    base/allocator/mem_pool.cpp
 )
 
 # make library
