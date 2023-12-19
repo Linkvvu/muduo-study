@@ -13,7 +13,7 @@ TcpServer::TcpServer(EventLoop* loop, const InetAddr& addr, const std::string& n
     , name_(name)
     , addr_(std::make_unique<InetAddr>(addr))
     , acceptor_(std::make_unique<Acceptor>(loop, addr, true))   // FIXME: set "option reuse-port" by evnironment-variable  
-    , ioThreadPool_(std::make_unique<EventLoopThreadPool>(loop, name))
+    , ioThreadPool_(std::make_unique<EventLoopThreadPool>(loop, name_))
     , conns_()
 {
     acceptor_->SetNewConnectionCallback(std::bind(&TcpServer::HandleNewConnection, this,
@@ -44,7 +44,7 @@ void TcpServer::HandleNewConnection(int connfd, const InetAddr& remote_addr) {
     InetAddr local_addr(sockets::getLocalAddr(connfd));
     EventLoop* cur_loop = ioThreadPool_->GetNextLoop();
 
-    TcpConnectionPtr new_conn_ptr = TcpConnection::CreateTcpConnection(cur_loop, std::move(new_conn_name), connfd, local_addr, remote_addr);
+    TcpConnectionPtr new_conn_ptr = std::make_shared<TcpConnection>(cur_loop, std::move(new_conn_name), connfd, local_addr, remote_addr);
     LOG_INFO << "TcpServer::HandleNewConnection: new connection [" << new_conn_name << "] from " << remote_addr.GetIpPort();
     conns_[new_conn_name] = new_conn_ptr;   // add current connection to list
     new_conn_ptr->SetConnectionCallback(connectionCb_);

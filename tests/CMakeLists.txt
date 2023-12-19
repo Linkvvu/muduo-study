@@ -21,9 +21,6 @@ target_link_libraries(Sockaddr_unittest "GTest::gtest" "GTest::gtest_main")
 add_executable(Reactor_unittest01 Reactor_unittest01.cc)
 target_link_libraries(Reactor_unittest01 muduoNet)
 
-add_executable(MemPool_unittest MemPool_unittest.cc)
-target_link_libraries(MemPool_unittest muduoNet "GTest::gtest" "GTest::gtest_main")
-
 add_executable(Buffer_unittest Buffer_unittest.cc)
 target_link_libraries(Buffer_unittest muduoNet "GTest::gtest" "GTest::gtest_main")
 

@@ -9,7 +9,8 @@
 using namespace muduo::base;
 
 int main() {
-    auto vec = new std::vector<int, muduo::base::alloctor<int>>();
+    muduo::base::MomoryPool pool;
+    auto vec = new std::vector<int, muduo::base::alloctor<int>>(muduo::base::alloctor<int>(&pool));
     
     for (int i = 0; i < NUM; i++) {
         vec->push_back(i);
