@@ -8,6 +8,8 @@ using namespace muduo;
 EventLoopThreadPool::EventLoopThreadPool(EventLoop* base_loop, const std::string& name)
     : baseLoop_(base_loop)
     , name_(name)
+    , threadPool_()
+    , loops_()
     { assert(baseLoop_ != nullptr); }
 
 EventLoopThreadPool::~EventLoopThreadPool() noexcept = default;

@@ -27,7 +27,7 @@ public:
     bool IsStarted() const
     { return started_; }
 
-    std::string Name() const
+    const std::string& Name() const
     { return name_; }
 
     void BuildAndRun();
@@ -35,7 +35,7 @@ public:
 
 private:
     EventLoop* const baseLoop_;
-    const std::string& name_;
+    std::string name_;
     IoThreadInitCallback_t initCb_ {nullptr};
     std::size_t poolSize_ {0};
     mutable std::size_t nextLoopIdx_ {0};
