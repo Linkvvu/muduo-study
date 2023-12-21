@@ -19,7 +19,7 @@ void Socket::BindInetAddr(const InetAddr& addr) {
 
 void Socket::SetReusePort(bool on) {
     int optval = on ? 1 : 0;
-    int ret = ::setsockopt(sockfd_, SOL_SOCKET, SO_REUSEPORT, &on, static_cast<socklen_t>(sizeof optval));
+    int ret = ::setsockopt(sockfd_, SOL_SOCKET, SO_REUSEPORT, &optval, static_cast<socklen_t>(sizeof optval));
     if (ret < 0) {
         LOG_SYSERR << "Socket::SetReusePort"; 
     }
@@ -27,7 +27,7 @@ void Socket::SetReusePort(bool on) {
 
 void Socket::SetReuseAddr(bool on) {
     int optval = on ? 1 : 0;
-    int ret = ::setsockopt(sockfd_, SOL_SOCKET, SO_REUSEADDR, &on, static_cast<socklen_t>(sizeof optval));
+    int ret = ::setsockopt(sockfd_, SOL_SOCKET, SO_REUSEADDR, &optval, static_cast<socklen_t>(sizeof optval));
     if (ret < 0) {
         LOG_SYSERR << "Socket::SetReusePort"; 
     }
