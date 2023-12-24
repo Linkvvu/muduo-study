@@ -6,11 +6,11 @@
 
 #define NUM 1000
 
-using namespace muduo::base;
+using namespace muduo;
 
 int main() {
-    muduo::base::MomoryPool pool;
-    auto vec = new std::vector<int, muduo::base::alloctor<int>>(muduo::base::alloctor<int>(&pool));
+    base::alloctor<int> alloc = base::alloctor<int>(std::make_shared<base::MemoryPool>());
+    auto vec = new std::vector<int, muduo::base::alloctor<int>>(alloc);
     
     for (int i = 0; i < NUM; i++) {
         vec->push_back(i);

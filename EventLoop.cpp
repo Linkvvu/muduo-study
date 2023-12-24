@@ -20,17 +20,35 @@ using namespace std::chrono;
 
 const EventLoop::TimeoutDuration_t EventLoop::kPollTimeout = duration_cast<EventLoop::TimeoutDuration_t>(seconds(5));
 
-
-EventLoop::EventLoop(base::MomoryPool* pool)
-    : memPool_(pool) 
+/**
+ * @code
+ * +--------------------------------------+
+ * |              MemoryPool              |
+ * |                                      |
+ * | +----------------------------------+ |
+ * | |        EventLoop instance        | |
+ * | +----------------------------------+ |
+ * | |   TcpConnection&shared_count     | |
+ * | +----------------------------------+ |
+ * | |   TcpConnection&shared_count     | |
+ * | +----------------------------------+ |
+ * | |               ...                | | 
+ * | +----------------------------------+ |
+ * |                                      |
+ * +--------------------------------------+
+ * @endcode 
+ */
+EventLoop::EventLoop(const std::shared_ptr<base::MemoryPool>& pool)
+    : memPool_(pool)
     , threadId_(::pthread_self())
     , looping_(false)
     , quit_(false)
     , eventHandling_(false)
     , poller_(std::make_unique<detail::PollPoller>(this))
-    , activeChannels_()
+    , activeChannels_(base::alloctor<Channel*>(GetMemoryPool()))
     , timerQueue_(std::make_unique<TimerQueue>(this))
     , bridge_(std::make_unique<Bridge>(this))
+    , pendingCbsQueue_(base::alloctor<PendingEventCb_t>(GetMemoryPool()))   // Use base::allocator to allocate store
     , callingPendingCbs_(false)
 {
     LOG_DEBUG << "EventLoop is created in thread " << threadId_;
@@ -49,9 +67,10 @@ EventLoop::EventLoop()
     , quit_(false)
     , eventHandling_(false)
     , poller_(std::make_unique<detail::PollPoller>(this))
-    , activeChannels_()
+    , activeChannels_(base::alloctor<Channel*>())
     , timerQueue_(std::make_unique<TimerQueue>(this))
     , bridge_(std::make_unique<Bridge>(this))
+    , pendingCbsQueue_(base::alloctor<PendingEventCb_t>())
     , callingPendingCbs_(false)
 {
     LOG_DEBUG << "EventLoop is created in thread " << threadId_;
@@ -63,29 +82,29 @@ EventLoop::EventLoop()
     }
 }
 
-std::unique_ptr<EventLoop, EventLoop::deleter_t> EventLoop::Create() {
-    static_assert(sizeof(EventLoop) <= base::MomoryPool::kMax_Bytes, "EventLoop实例应当必须被分配在内存池中，而不是被转调用至一级配置器");
+std::unique_ptr<EventLoop, base::deleter_t<EventLoop>> EventLoop::Create() {
+    static_assert(sizeof(EventLoop) <= base::MemoryPool::kMax_Bytes, "EventLoop实例应当必须被分配在内存池中，而不是被转调用至一级配置器");
     
-    auto pool = std::make_shared<base::MomoryPool>();   // create a memory pool instance
-    base::MomoryPool* pool_ptr = pool.get();
+    auto pool = std::make_shared<base::MemoryPool>();   // create a memory pool instance
 
     /*
         The EventLoop instance is constcuted in the memory pool,
         so can`t use "delete" key to clear the instance,
         just need to call EventLoop::destrcutor.
     */ 
-    EventLoop::deleter_t deleter = [pool](EventLoop* loop) {
+    base::deleter_t<EventLoop> deleter = [pool](EventLoop* loop) {
         loop->~EventLoop();
         pool->deallocate(loop, sizeof (*loop));  // return space to MemoryPool instance
 
-        // when lambda exit, The Instance of memory pool held by EventLoop object will be destroyed
+        // when lambda exit, The Instance of memory pool held by EventLoop object will be destroyed (if shared count is 1)
     };
 
+    base::MemoryPool* pool_ptr = pool.get();
     EventLoop* loop_ptr = nullptr;
-    loop_ptr = new (pool_ptr) EventLoop(pool_ptr);    // Be constructed in the specificed memory pool instance
+    loop_ptr = new (pool_ptr) EventLoop(pool);    // Be constructed in the specificed memory pool instance
     assert(loop_ptr != nullptr);    // 当构造函数抛出异常，loop_ptr == nullptr
 
-    return std::unique_ptr<EventLoop, EventLoop::deleter_t>(loop_ptr, std::move(deleter)); 
+    return std::unique_ptr<EventLoop, base::deleter_t<EventLoop>>(loop_ptr, std::move(deleter)); 
 }
 
 EventLoop::~EventLoop() {
@@ -189,7 +208,7 @@ void EventLoop::RunInEventLoop(const PendingEventCb_t& cb) {
 }
 
 void EventLoop::HandlePendingCallbacks() {
-    std::vector<PendingEventCb_t> tmp_queue;
+    std::vector<PendingEventCb_t, base::alloctor<PendingEventCb_t>> tmp_queue(GetMemoryPool());
     callingPendingCbs_.store(true);
     {   // 缩短临界区大小
         std::lock_guard<std::mutex> guard(mtx_);
@@ -209,11 +228,13 @@ void EventLoop::Quit() {
     }
 }
 
-void* EventLoop::operator new(size_t size, base::MomoryPool* pool) {
+void* EventLoop::operator new(size_t size, base::MemoryPool* pool) {
     return pool->allocate(size);
 }
 
 
-void EventLoop::operator delete(void* p, base::MomoryPool* pool) {
+void EventLoop::operator delete(void* p, base::MemoryPool* pool) {
     pool->deallocate(p, sizeof(EventLoop));
-}}
+}
+
+}

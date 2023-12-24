@@ -42,19 +42,16 @@ EventLoop* EventLoopThread::Run() {
 }
 
 void EventLoopThread::ThreadFunc() {
-    // EventLoop loop; // create a EventLoop on stack
-
-    // create a EventLoop in memory pool
-    std::unique_ptr<muduo::EventLoop, muduo::EventLoop::deleter_t> loop = CreateEventLoop();
-
+    EventLoop loop; // create a EventLoop on stack
+    
     if (initCb_.operator bool()) {
-        initCb_(loop.get());
+        initCb_(&loop);
     }
 
     {
         std::lock_guard<std::mutex> guard(mtx_);
         if (isExit_ == false) {
-            loop_ = loop.get();   // Dangerous operation!
+            loop_ = &loop;
         } else {
             cv_.notify_one();
             return;
@@ -62,7 +59,7 @@ void EventLoopThread::ThreadFunc() {
     }
     cv_.notify_one();
 
-    loop->Loop();   // start loop
+    loop.Loop();   // start loop
 
     std::lock_guard<std::mutex> guard(mtx_);
     loop_ = nullptr;

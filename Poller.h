@@ -19,7 +19,7 @@ class EventLoop;    // forward declaration
 */
 class Poller {
 protected:
-    using ChannelList_t = std::vector<Channel*>;
+    using ChannelList_t = EventLoop::ChannelList_t;
     Poller(const Poller&) = delete; // non-copyable
     Poller(Poller&&) = delete;      // non-moveable
 

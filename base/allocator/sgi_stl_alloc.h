@@ -16,7 +16,9 @@ public:
     /// The type traits Required by STL Allocator standard
     using value_type = T;
 
-    simple_allocator() = delete;
+    simple_allocator()
+        : alloc_(nullptr)
+        {}
 
     /// 为满足分配器传播机制的构造函数
     template <typename V>
@@ -24,64 +26,42 @@ public:
         : alloc_(another.alloc_)
         { }
 
-    simple_allocator(Alloc* alloc) 
+    simple_allocator(const std::shared_ptr<Alloc>& alloc) 
             : alloc_(alloc)
         { }
     
+    /// copy constructor 
     simple_allocator(const simple_allocator&) = default;
     simple_allocator& operator=(const simple_allocator&) = default;
 
     /// The interface Required by standard STL Allocator
     /// @param n The number of elements to be allocated
     T* allocate(size_t n)
-    { return n == 0 ? nullptr : static_cast<T*>( alloc_->allocate(n * sizeof(T)) ); }
+    { 
+        if (alloc_)
+            return n == 0 ? nullptr : static_cast<T*>( alloc_->allocate(n * sizeof(T)) ); 
+        else
+            return std::allocator<T>().allocate(n);
+    }
 
     /// The interface Required by standard STL Allocator
     void deallocate(T* ptr, size_t n)
     {
-        if (n != 0)
-            alloc_->deallocate(ptr, n * sizeof(T));
+        if (n != 0) {
+            if (alloc_)
+                alloc_->deallocate(ptr, n * sizeof(T));
+            else
+                std::allocator<T>().deallocate(ptr, n);
+        }
     }
     
-    Alloc* alloc_;  // Aggregation
+    std::shared_ptr<Alloc> alloc_;  // Aggregation
 };
-
-/* ======================================================================================== */
-
-/// Sub allocator
-/// non-copyable
-// template <int unused /* , bool thread_safe */>
-// class pool_alloc {
-// public:
-//     explicit pool_alloc()
-//         : pool_(std::make_unique<mem_pool>())
-//         { }
-
-//     /// @note not thread-safe
-//     void* allocate(size_t n) {
-//         return pool_->allocate(n);
-//     }
-
-//     /// @note not thread-safe
-//     void deallocate(void* ptr, size_t n) {
-//         pool_->deallocate(ptr, n);
-//     }
-
-//     /// Get internal memory pool 
-//     mem_pool* GetPool() 
-//     { return pool_.get(); }
-
-// private:
-//     std::unique_ptr<mem_pool> pool_;
-// };
-
-// using sub_alloc = pool_alloc<0>;
-// using alloc = base::detail::sub_alloc;
 
 } // namespace detail 
 
 template <typename T>
-using alloctor = detail::simple_allocator<T, base::MomoryPool>;
+using alloctor = detail::simple_allocator<T, base::MemoryPool>;
 
 } // namespace base 
 } // namespace muduo 

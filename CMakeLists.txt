@@ -110,8 +110,17 @@ set(
   base/Logging.h
   base/LogStream.h
   base/ThreadPool.h
+  base/allocator/mem_pool.h
+  base/allocator/sgi_stl_alloc.h
+)
+
+set(
+  PUB_BASE_ALLOCATOR_HEADERS 
+  base/allocator/mem_pool.h
+  base/allocator/sgi_stl_alloc.h
 )
 
 install(FILES ${PUB_HEADERS} DESTINATION include/muduo)
 install(FILES ${PUB_BASE_HEADERS} DESTINATION include/muduo/base)
+install(FILES ${PUB_BASE_ALLOCATOR_HEADERS} DESTINATION include/muduo/base/allocator)
 install(TARGETS muduoNet) # DESTINATION ${CMAKE_INSTALL_LIBDIR}

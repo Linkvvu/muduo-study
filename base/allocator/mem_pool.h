@@ -1,6 +1,7 @@
 #if !defined(MUDUO_BASE_ALLOCATOR_MEM_POOL_H)
 #define MUDUO_BASE_ALLOCATOR_MEM_POOL_H
 
+#include <functional>
 #include <cassert>
 #include <cstdlib>
 #include <list>
@@ -165,7 +166,11 @@ private:
 
 } // namespace detail 
 
-using MomoryPool = detail::mem_pool;
+using MemoryPool = detail::mem_pool;
+
+/// @brief 由内存池构造的实例的"删除器"类型, 为适配于智能制造
+template <typename T>
+using deleter_t = std::function<void(T* p)>; 
 
 } // namespace base 
 } // namespace muduo 
