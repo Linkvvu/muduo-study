@@ -9,8 +9,15 @@ using namespace muduo;
 Acceptor::Acceptor(EventLoop* owner, const InetAddr& addr, bool reuse_port)
     : owner_(owner)
     , addr_(addr)
+#ifdef MUDUO_USE_MEMPOOL
+    , listener_(new (owner_->GetMemoryPool().get()) Socket(sockets::createNonblockingOrDie(addr.GetAddressFamily())),
+            std::bind(&base::DestroyWithMemPool<Socket>, std::placeholders::_1, owner_->GetMemoryPool().get()))
+    , channel_(new (owner_->GetMemoryPool().get()) Channel(owner_, listener_->FileDescriptor()),
+            std::bind(&base::DestroyWithMemPool<Channel>, std::placeholders::_1, owner_->GetMemoryPool().get()))
+#else
     , listener_(std::make_unique<Socket>(sockets::createNonblockingOrDie(addr.GetAddressFamily())))
     , channel_(std::make_unique<Channel>(owner_, listener_->FileDescriptor()))
+#endif
     , idleFd_(::open("/dev/null", O_RDONLY|O_CLOEXEC))
     , listening_(false)
 {

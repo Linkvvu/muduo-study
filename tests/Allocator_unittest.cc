@@ -9,8 +9,8 @@
 using namespace muduo;
 
 int main() {
-    base::alloctor<int> alloc = base::alloctor<int>(std::make_shared<base::MemoryPool>());
-    auto vec = new std::vector<int, muduo::base::alloctor<int>>(alloc);
+    base::allocator<int> alloc = base::allocator<int>(std::make_shared<base::MemoryPool>());
+    auto vec = new std::vector<int, muduo::base::allocator<int>>(alloc);
     
     for (int i = 0; i < NUM; i++) {
         vec->push_back(i);

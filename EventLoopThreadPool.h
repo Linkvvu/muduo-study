@@ -1,6 +1,7 @@
 #if !defined(MUDUO_EVENTLOOP_THREAD)
 #define MUDUO_EVENTLOOP_THREAD
 
+#include <muduo/base/allocator/sgi_stl_alloc.h>
 #include <muduo/Callbacks.h>
 #include <memory>
 #include <vector>
@@ -8,7 +9,12 @@
 
 namespace muduo {
 class EventLoopThread;  // forward declaration
+
+#ifdef MUDUO_USE_MEMPOOL
+class EventLoopThreadPool final : public base::detail::ManagedByMempoolAble<EventLoopThreadPool> {
+#else
 class EventLoopThreadPool {
+#endif
     // non-copyable & non-moveable
     EventLoopThreadPool(const EventLoopThreadPool&) = delete;
     EventLoopThreadPool operator=(const EventLoopThreadPool&) = delete;
@@ -40,8 +46,14 @@ private:
     std::size_t poolSize_ {0};
     mutable std::size_t nextLoopIdx_ {0};
     std::atomic_bool started_ {false};
+#ifdef MUDUO_USE_MEMPOOL
+
+    std::vector<std::unique_ptr<EventLoopThread>, base::allocator<std::unique_ptr<EventLoopThread>>> threadPool_;
+    std::vector<EventLoop*, base::allocator<EventLoop*>> loops_;
+#else
     std::vector<std::unique_ptr<EventLoopThread>> threadPool_;
     std::vector<EventLoop*> loops_;
+#endif
 };
 
 

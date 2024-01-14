@@ -20,7 +20,12 @@ int CreateEventFd() {
 
 Bridge::Bridge(EventLoop* loop)
     : owner_(loop)
+#ifdef MUDUO_USE_MEMPOOL
+    , chan_(new (owner_->GetMemoryPool().get()) Channel(loop, CreateEventFd()),
+            std::bind(&base::DestroyWithMemPool<Channel>, std::placeholders::_1, owner_->GetMemoryPool().get()))
+#else
     , chan_(std::make_unique<Channel>(loop, CreateEventFd()))
+#endif
 {
     chan_->EnableReading();
     chan_->SetReadCallback(std::bind(&Bridge::HandleWakeUpFdRead, this));

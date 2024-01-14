@@ -6,7 +6,7 @@
 #include <cassert>
 #include <cstring>
 
-muduo::Poller::ReceiveTimePoint_t muduo::detail::PollPoller::Poll(const TimeoutDuration_t& timeout, ChannelList_t* activeChannels) {
+muduo::Poller::ReceiveTimePoint_t muduo::detail::PollPoller::Poll(const TimeoutDuration_t& timeout, ChannelList* activeChannels) {
     int numReady = ::poll(&pollfds_.front(), pollfds_.size(), timeout.count());
     // Get now-timestamp when poll(2) is awaked
     auto nowMicrosecond = std::chrono::system_clock::now();
@@ -71,7 +71,7 @@ void muduo::detail::PollPoller::RemoveChannel(Channel* c) {
     assert(ret == 1);   (void)ret;
 
     // remove the channel from struct-pollfd-list
-    if (static_cast<PollfdList_t::size_type>(c->Index()) == pollfds_.size()-1) {
+    if (static_cast<PollFdList::size_type>(c->Index()) == pollfds_.size()-1) {
         pollfds_.pop_back();
     } else {
 	    // 这里移除的算法复杂度是O(1)，将待删除元素与最后一个元素交换再pop_back
@@ -88,8 +88,8 @@ void muduo::detail::PollPoller::RemoveChannel(Channel* c) {
     }
 }
 
-void muduo::detail::PollPoller::FillActiveChannels(int numReadyEvents, ChannelList_t* activeChannels) const {
-    for (PollfdList_t::const_iterator c_it = pollfds_.begin(); 
+void muduo::detail::PollPoller::FillActiveChannels(int numReadyEvents, ChannelList* activeChannels) const {
+    for (PollFdList::const_iterator c_it = pollfds_.begin(); 
             c_it != pollfds_.end() && numReadyEvents > 0; c_it++)
     {
         if (c_it->revents > 0) {    // There are interesting events coming
@@ -103,3 +103,16 @@ void muduo::detail::PollPoller::FillActiveChannels(int numReadyEvents, ChannelLi
         }
     }
 }
+#ifdef MUDUO_USE_MEMPOOL
+    muduo::detail::PollPoller::PollPoller(EventLoop* loop)
+        : Poller(loop)
+        , pollfds_(loop->GetMemoryPool())
+        , channels_(loop->GetMemoryPool())
+        { }
+#else
+    muduo::detail::PollPoller::PollPoller(EventLoop* loop)
+        : Poller(loop)
+        , pollfds_()
+        , channels_()
+        { }
+#endif

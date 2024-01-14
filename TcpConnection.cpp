@@ -13,12 +13,21 @@ using namespace muduo;
 TcpConnection::TcpConnection(EventLoop* owner, const std::string& name, int sockfd, const InetAddr& local_addr, const InetAddr& remote_addr)
     : loop_(owner)
     , name_(name)
-    , socket_(std::make_unique<Socket>(sockfd))
-    , chan_(std::make_unique<Channel>(owner, sockfd))
     , localAddr_(local_addr)
     , remoteAddr_(remote_addr)
+#ifdef MUDUO_USE_MEMPOOL
+    , socket_(new (loop_->GetMemoryPool().get()) Socket(sockfd),
+        std::bind(&base::DestroyWithMemPool<Socket>, std::placeholders::_1, loop_->GetMemoryPool().get()))
+    , chan_(new (loop_->GetMemoryPool().get()) Channel(owner, sockfd),
+        std::bind(&base::DestroyWithMemPool<Channel>, std::placeholders::_1, loop_->GetMemoryPool().get()))
+    , inputBuffer_(owner->GetMemoryPool())  // Initially allocate from the memory pool
+    , outputBuffer_(owner->GetMemoryPool())
+#else
+    , socket_(std::make_unique<Socket>(sockfd))
+    , chan_(std::make_unique<Channel>(owner, sockfd))
     , inputBuffer_()
     , outputBuffer_()
+#endif
 {
     chan_->SetReadCallback(std::bind(&TcpConnection::HandleRead, this, std::placeholders::_1));
     chan_->SetWriteCallback(std::bind(&TcpConnection::HandleWrite, this));

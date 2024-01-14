@@ -1,0 +1,4 @@
+#ifndef MUDUO_CONFIG_H
+#define MUDUO_CONFIG_H
+    #cmakedefine MUDUO_USE_MEMPOOL
+#endif

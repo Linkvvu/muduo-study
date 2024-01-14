@@ -10,7 +10,7 @@ namespace detail {
     using TimerId_t = int;
     using TimeoutCb_t = std::function<void()>;
     using TimePoint_t = std::chrono::steady_clock::time_point;
-    using Interval_t = std::chrono::microseconds;
+    using Interval_t = std::chrono::milliseconds;
 
 } // namespace detail 
 } // namespace muduo 

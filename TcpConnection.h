@@ -88,10 +88,15 @@ private:
 private:
     EventLoop* loop_;
     std::string name_;
-    std::unique_ptr<Socket> socket_;
-    std::unique_ptr<Channel> chan_;
     InetAddr localAddr_;
     InetAddr remoteAddr_;
+#ifdef MUDUO_USE_MEMPOOL
+    std::unique_ptr<Socket, base::deleter_t<Socket>> socket_;
+    std::unique_ptr<Channel, base::deleter_t<Channel>> chan_;
+#else
+    std::unique_ptr<Socket> socket_;
+    std::unique_ptr<Channel> chan_;
+#endif
     std::atomic<State> state_ {connecting};
     std::any context_ {};  // C++ 17
     ConnectionCallback_t connectionCb_ {nullptr};

@@ -14,7 +14,11 @@ namespace muduo {
  * The file descriptor could be a socket \ event fd \ timer fd \ signal fd
  * Channel is responsible to register and handle IO events
 */
+#ifdef MUDUO_USE_MEMPOOL
+class Channel final : public base::detail::ManagedByMempoolAble<Channel> {
+#else
 class Channel {
+#endif
     Channel(const Channel&) = delete;   // non-copyable & non-moveable
     
     static const int kNoneEvent;
@@ -33,7 +37,7 @@ public:
     };
 
     /**
-     * 将当前Channel绑定給給由shared_ptr管理的所有者对象
+     * 将当前Channel绑定给由shared_ptr管理的所有者对象
      * 防止所有者对象在Poller::handleEvent中被销毁
     */
     void Tie(const std::shared_ptr<void>& obj) {

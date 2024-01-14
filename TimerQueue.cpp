@@ -11,9 +11,24 @@ class TimerQueue::TimerMinHeap {
     TimerMinHeap(const TimerMinHeap&) = delete;
     TimerMinHeap operator=(const TimerMinHeap) = delete;
 
+#ifdef MUDUO_USE_MEMPOOL
+private:
+    using TimerList = std::vector<std::unique_ptr<Timer>, base::allocator<std::unique_ptr<Timer>>>;
+    /// The index in @c TimerList of Timer, key=TimerId_t value=index
+    using TimerMap = std::unordered_map<TimerId_t, std::size_t, std::hash<TimerId_t>, std::equal_to<TimerId_t>, base::allocator<std::pair<const TimerId_t, size_t>>>;
+#else
+private:
+    using TimerList = std::vector<std::unique_ptr<Timer>>;
+    using TimerMap = std::unordered_map<TimerId_t, std::size_t>;
+#endif
+
 public:
     TimerMinHeap(TimerQueue* q)
         : owner_(q)
+#ifdef MUDUO_USE_MEMPOOL
+        , timerList_(owner_->Owner()->GetMemoryPool())
+        , positions_(owner_->Owner()->GetMemoryPool())
+#endif
         { }
 
     /**
@@ -156,18 +171,26 @@ private:
         }
     }
 
+
+
 private:
     TimerQueue* const owner_;
-    std::vector<std::unique_ptr<Timer>> timerList_;
-    std::unordered_map<TimerId_t, std::size_t> positions_;    // TimerId - index in timerList_
+    TimerList timerList_;
+    TimerMap positions_;
 };
 
 /*************************************************************************************************/
 
 TimerQueue::TimerQueue(EventLoop* owner)
     : owner_(owner)
+#ifdef MUDUO_USE_MEMPOOL
+    , watcher_(new (owner_->GetMemoryPool().get()) Watcher(this),
+                std::bind(&base::DestroyWithMemPool<Watcher>, std::placeholders::_1, owner_->GetMemoryPool().get()))
+    , heap_(std::make_unique<TimerMinHeap>(this))
+#else
     , watcher_(std::make_unique<Watcher>(this))
     , heap_(std::make_unique<TimerMinHeap>(this))
+#endif
     , nextTimerId_(0)
     , latestTime_(TimePoint_t::max())
 {
@@ -233,21 +256,21 @@ void TimerQueue::ResetTimerfd() {
 
 void TimerQueue::HandleExpiredTimers() {
     // owner_->AssertInLoopThread();   // Already asserted in watcher::HandleExpiredTimers
-    ExpiredTimersList_t expired_timers = GetExpiredTimers();
+    ExpiredTimerList expired_timers = GetExpiredTimers();
     for (const auto& t : expired_timers) {
         t->Run();
     }
 }
 
-TimerQueue::ExpiredTimersList_t TimerQueue::GetExpiredTimers() {
-    ExpiredTimersList_t result;
+TimerQueue::ExpiredTimerList TimerQueue::GetExpiredTimers() {
+    ExpiredTimerList result;
     using namespace std;
     // return all expired timers so far
     while (!heap_->Empty() && heap_->Top()->ExpirationTime() <= chrono::steady_clock::now()) {
         result.emplace_back(std::move(heap_->Top()));
         if (result.back()->Repeat()) {
             TimePoint_t next_expiration = TimePoint_t::clock::now() + result.back()->Interval();
-            heap_->Top().reset(new Timer(next_expiration, result.back()->Interval(), result.back()->cb_, result.back()->GetId()));
+            heap_->Top().reset(new Timer(next_expiration, result.back()->Interval(), result.back()->GetPendingCallback(), result.back()->GetId()));
             heap_->Adjust(0);
         } else {
             heap_->PopMovedTimer(result.back()->GetId());

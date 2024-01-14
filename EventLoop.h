@@ -1,5 +1,6 @@
 #if !defined(MUDUO_EVENTLOOP_H)
 #define MUDUO_EVENTLOOP_H
+
 #include <muduo/base/allocator/sgi_stl_alloc.h>
 #include <muduo/base/Logging.h>
 #include <muduo/TimerType.h>
@@ -32,48 +33,51 @@ namespace {
 namespace muduo {
     using namespace detail;
 
+#ifdef MUDUO_USE_MEMPOOL
+class EventLoop final : public base::detail::ManagedByMempoolAble<EventLoop> {
+#else
 class EventLoop {
-    /// Construct with memory pool, prevent create on stack 
-    /// @note Only use by EventLoop::Create
-    EventLoop(const std::shared_ptr<base::MemoryPool>& pool);
+#endif
     /// noncopyable & nonmoveable
     EventLoop(const EventLoop&) = delete;
-    
-public:
-    using ReceiveTimePoint_t = std::chrono::system_clock::time_point;
-    using TimeoutDuration_t = std::chrono::milliseconds;
-    using ChannelList_t = std::vector<Channel*, base::alloctor<Channel*>>;
-    
-private:
-    static const TimeoutDuration_t kPollTimeout;
 
-public:
-    /// Use muduo::base::MemoryPool to alloacte store space 
-    /// @note The method will hide the global operator new for this class
-    static void* operator new(size_t size, base::MemoryPool* pool);
-
-    /// @brief The method corresponds to @c EventLoop::operator new(size_t size, base::MemoryPool* pool),
-    /// Only will be invoked When EventLoop::constructors throws a excepction
-    /// @note The method will hide the global operator delete for this class
-    static void operator delete(void* p, base::MemoryPool* pool);
-
-
-    /// Explicitly declare @c EventLoop::operator new(), uses the global new operator
-    static void* operator new(size_t size)
-    { return ::operator new(size); }
-
-    /// Explicitly declare @c EventLoop::operator delete(), uses the global delete operator
-    static void operator delete(void* p)
-    { ::operator delete(p); }
-    
+#ifdef MUDUO_USE_MEMPOOL
+    public:
     /// @brief Factory pattern
     /// @return A EventLoop instance within muduo::base::memory_pool 
     static std::unique_ptr<EventLoop, base::deleter_t<EventLoop>> Create();
 
+    private:
+    /// Construct with memory pool, prevent create on stack 
+    /// @note Only use by EventLoop::Create
+    EventLoop(const std::shared_ptr<base::MemoryPool>& pool);
+#else
+    public:
+    /// @return A EventLoop instance
+    static std::unique_ptr<EventLoop> Create();
+
+    private:
     /// @brief Default constructor
     /// @return A EventLoop instance, don't use muduo::base::memory_pool 
+    /// @note Only use by EventLoop::Create
     EventLoop();
+#endif
+    
+public:
+    using ReceiveTimePoint_t = std::chrono::system_clock::time_point;
+    using TimeoutDuration_t = std::chrono::milliseconds;
+#ifdef MUDUO_USE_MEMPOOL
+    using ChannelList = std::vector<Channel*, base::allocator<Channel*>>;
+    private:
+    using PendingCallbacksQueue = std::vector<PendingEventCb_t, base::allocator<PendingEventCb_t>>; 
+#else
+    using ChannelList = std::vector<Channel*>;
+    private:
+    using PendingCallbacksQueue = std::vector<PendingEventCb_t>;
+#endif
+    static const TimeoutDuration_t kPollTimeout;
 
+public:
     ~EventLoop();
 
     /// @brief Must be called in the same thread as creation of the object.
@@ -133,9 +137,11 @@ public:
     */
     void RunInEventLoop(const PendingEventCb_t& cb);
      
+#ifdef MUDUO_USE_MEMPOOL
     const std::shared_ptr<base::MemoryPool>& GetMemoryPool() const {
         return memPool_;
     }
+#endif
 
 public:
     static EventLoop* GetCurrentThreadLoop();
@@ -154,29 +160,47 @@ private:
     void HandlePendingCallbacks();
 
 private:
-    const std::shared_ptr<base::MemoryPool> memPool_;  // Loop-level memory pool hanlde
-
     const pthread_t threadId_;
     bool looping_;
     std::atomic_bool quit_ { false };
     bool eventHandling_;
-    std::unique_ptr<Poller> poller_;    // 組合
-
-    ReceiveTimePoint_t receiveTimePoint_;
-    ChannelList_t activeChannels_;
+#ifdef MUDUO_USE_MEMPOOL
+    const std::shared_ptr<base::MemoryPool> memPool_;  // Loop-level memory pool handle
+    std::unique_ptr<Poller, base::deleter_t<Poller>> poller_;    // 组合
+    std::unique_ptr<TimerQueue, base::deleter_t<TimerQueue>> timerQueue_;
+#else
+    std::unique_ptr<Poller> poller_;    // 组合
     std::unique_ptr<TimerQueue> timerQueue_;
+#endif
+    ReceiveTimePoint_t receiveTimePoint_;
+    ChannelList activeChannels_;
 
     /* cross-threads wait/notify helper */
+#ifdef MUDUO_USE_MEMPOOL
+    std::unique_ptr<Bridge, base::deleter_t<Bridge>> bridge_;
+#else
     std::unique_ptr<Bridge> bridge_;
+#endif
     std::mutex mtx_;    // for sync EventLoop::pendingCbsQueue_
-    std::vector<PendingEventCb_t, base::alloctor<PendingEventCb_t>> pendingCbsQueue_;
+    PendingCallbacksQueue pendingCbsQueue_;
     std::atomic_bool callingPendingCbs_;
 };
-    
-/// Factory pattern
-inline std::unique_ptr<EventLoop, base::deleter_t<EventLoop>> CreateEventLoop() {
-    return EventLoop::Create();
-}
+
+#ifdef MUDUO_USE_MEMPOOL
+    /// Factory pattern
+    inline std::unique_ptr<EventLoop, base::deleter_t<EventLoop>> CreateEventLoop() {
+        return EventLoop::Create();
+    }
+
+    using EventLoopPtr = std::unique_ptr<EventLoop, base::deleter_t<EventLoop>>;
+#else
+    /// Factory pattern
+    inline std::unique_ptr<EventLoop> CreateEventLoop() {
+        return EventLoop::Create();
+    }
+
+    using EventLoopPtr = std::unique_ptr<EventLoop>;
+#endif
 
 } // namespace muduo 
 

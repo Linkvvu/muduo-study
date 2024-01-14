@@ -1,10 +1,13 @@
 #if !defined(MUDUO_TCPSERVER_H)
 #define MUDUO_TCPSERVER_H
+
+#include <muduo/base/allocator/sgi_stl_alloc.h>
 #include <muduo/InetAddr.h>
 #include <muduo/Callbacks.h>
 #include <unordered_map>
 #include <atomic>
 #include <memory>
+
 namespace muduo {
 
 class EventLoop;        // forward declaration
@@ -14,7 +17,11 @@ class EventLoopThreadPool;  // forward declaration
 
 /// @brief A non-copyable TCP-Server
 /// single-Reactor mode, Acceptor and IO-handler run in same thread
+#ifdef MUDUO_USE_MEMPOOL
+class TcpServer final : public base::detail::ManagedByMempoolAble<TcpServer> {
+#else
 class TcpServer {
+#endif
     friend TcpConnection;
     TcpServer(const TcpServer&) = delete;
     TcpServer& operator=(const TcpServer&) = delete;
@@ -51,13 +58,22 @@ private:
 private:
     EventLoop* loop_;
     std::string name_;
-    std::unique_ptr<InetAddr> addr_;
+    InetAddr addr_;
+#ifdef MUDUO_USE_MEMPOOL
+    std::unique_ptr<Acceptor, base::deleter_t<Acceptor>> acceptor_;
+    std::unique_ptr<EventLoopThreadPool, base::deleter_t<EventLoopThreadPool>> ioThreadPool_;
+
+    using ConnectionsMap = std::unordered_map<std::string, TcpConnectionPtr, 
+                                            std::hash<std::string>, std::equal_to<std::string>,
+                                            base::allocator<std::pair<const std::string, TcpConnectionPtr>>>;
+#else
     std::unique_ptr<Acceptor> acceptor_;
     std::unique_ptr<EventLoopThreadPool> ioThreadPool_;
-    std::atomic_bool serving_ {false};
     
     using ConnectionsMap = std::unordered_map<std::string, TcpConnectionPtr>;
+#endif
     ConnectionsMap conns_;
+    std::atomic_bool serving_ {false};
 
     /* Callbacks for custom logic */
     ConnectionCallback_t connectionCb_ {nullptr};

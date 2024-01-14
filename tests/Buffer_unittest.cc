@@ -1,3 +1,6 @@
+#ifndef MUDUO_USE_MEMPOOL
+
+#include <muduo/base/allocator/sgi_stl_alloc.h>
 #include <muduo/Buffer.h>
 #include <gtest/gtest.h>
 #include <string>
@@ -6,7 +9,13 @@ using std::string;
 using namespace muduo;
 
 TEST(TestBuffer, TestBufferAppendRetrieve) {
+#ifdef MUDUO_USE_MEMPOOL
+    std::shared_ptr<base::MemoryPool> pool = std::make_shared<base::MemoryPool>();
+    base::allocator<char> allocator(pool);
+    Buffer buf(allocator);
+#else
     Buffer buf;
+#endif
     GTEST_ASSERT_EQ(buf.ReadableBytes(), 0);
     GTEST_ASSERT_EQ(buf.WriteableBytes(), Buffer::kInitialSize);
     GTEST_ASSERT_EQ(buf.PrependableBytes(), Buffer::kCheapPrepend);
@@ -38,7 +47,13 @@ TEST(TestBuffer, TestBufferAppendRetrieve) {
 }
 
 TEST(TestBuffer, testBufferGrow) {
+#ifdef MUDUO_USE_MEMPOOL
+    std::shared_ptr<base::MemoryPool> pool = std::make_shared<base::MemoryPool>();
+    base::allocator<char> allocator(pool);
+    Buffer buf(allocator);
+#else
     Buffer buf;
+#endif
     buf.Append(string(400, 'y'));
     GTEST_ASSERT_EQ(buf.ReadableBytes(), 400);
     GTEST_ASSERT_EQ(buf.WriteableBytes(), Buffer::kInitialSize - 400);
@@ -60,7 +75,13 @@ TEST(TestBuffer, testBufferGrow) {
 }
 
 TEST(TestBuffer, testBufferInsideGrow) {
+#ifdef MUDUO_USE_MEMPOOL
+    std::shared_ptr<base::MemoryPool> pool = std::make_shared<base::MemoryPool>();
+    base::allocator<char> allocator(pool);
+    Buffer buf(allocator);
+#else
     Buffer buf;
+#endif
     buf.Append(string(800, 'y'));
     GTEST_ASSERT_EQ(buf.ReadableBytes(), 800);
     GTEST_ASSERT_EQ(buf.WriteableBytes(), Buffer::kInitialSize - 800);
@@ -77,7 +98,13 @@ TEST(TestBuffer, testBufferInsideGrow) {
 }
 
 TEST(TestBuffer, testBufferShrink) {
+#ifdef MUDUO_USE_MEMPOOL
+    std::shared_ptr<base::MemoryPool> pool = std::make_shared<base::MemoryPool>();
+    base::allocator<char> allocator(pool);
+    Buffer buf(allocator);
+#else
     Buffer buf;
+#endif
     buf.Append(string(2000, 'y'));
     GTEST_ASSERT_EQ(buf.ReadableBytes(), 2000);
     GTEST_ASSERT_EQ(buf.WriteableBytes(), 0);
@@ -96,7 +123,13 @@ TEST(TestBuffer, testBufferShrink) {
 }
 
 TEST(TestBuffer, testBufferPrepend) {
+#ifdef MUDUO_USE_MEMPOOL
+    std::shared_ptr<base::MemoryPool> pool = std::make_shared<base::MemoryPool>();
+    base::allocator<char> allocator(pool);
+    Buffer buf(allocator);
+#else
     Buffer buf;
+#endif
     buf.Append(string(200, 'y'));
     GTEST_ASSERT_EQ(buf.ReadableBytes(), 200);
     GTEST_ASSERT_EQ(buf.WriteableBytes(), Buffer::kInitialSize - 200);
@@ -110,7 +143,13 @@ TEST(TestBuffer, testBufferPrepend) {
 }
 
 TEST(TestBuffer, testReadInts) {
+#ifdef MUDUO_USE_MEMPOOL
+    std::shared_ptr<base::MemoryPool> pool = std::make_shared<base::MemoryPool>();
+    base::allocator<char> allocator(pool);
+    Buffer buf(allocator);
+#else
     Buffer buf;
+#endif
     buf.Append("HTTP");
 
     EXPECT_EQ(buf.ReadableBytes(), 4);
@@ -134,3 +173,5 @@ TEST(TestBuffer, testReadInts) {
     EXPECT_EQ(buf.ReadInt16(), -2);
     EXPECT_EQ(buf.ReadInt32(), -3);
 }
+
+#endif

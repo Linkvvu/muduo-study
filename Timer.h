@@ -17,7 +17,6 @@ class Timer {
     // noncopyable & nonmoveable
     Timer(const Timer&) = delete;
     Timer(Timer&&) = delete;
-    friend TimerQueue::ExpiredTimersList_t TimerQueue::GetExpiredTimers();
 
 public:
     Timer(const TimePoint_t& time_point, const Interval_t& interval_us, const TimeoutCb_t& cb, const TimerId_t id)
@@ -32,6 +31,7 @@ public:
     Interval_t Interval() const { return interval_; }
     TimerId_t GetId() const { return id_; }
     bool Repeat() const { return interval_ != Interval_t::zero(); }
+    const TimeoutCb_t& GetPendingCallback() const { return cb_; }
 
 private:
     TimeoutCb_t cb_;
@@ -42,7 +42,14 @@ private:
 
 /*************************************************************************************************/
 
+/**
+ * @brief 负责注册Timerfd，监控并处理Timer的超时事件(通知TimerQueue处理所有超时的Timer)
+ */
+#ifdef MUDUO_USE_MEMPOOL
+class Watcher final : public base::detail::ManagedByMempoolAble<Watcher> {
+#else
 class Watcher {
+#endif
     // non-copyable & non-moveable
     Watcher(const Watcher&) = delete;
     Watcher operator=(const Watcher&) = delete;
@@ -68,7 +75,11 @@ private:
 
 private:
     TimerQueue* const owner_;   // 聚合
+#ifdef MUDUO_USE_MEMPOOL
+    std::unique_ptr<Channel, base::deleter_t<Channel>> watcherChannel_;
+#else
     std::unique_ptr<Channel> watcherChannel_;
+#endif
 };
 
 } // namespace muduo 

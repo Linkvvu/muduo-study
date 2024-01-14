@@ -1,6 +1,7 @@
 #if !defined(MUDUO_BASE_ALLOCATOR_MEM_POOL_H)
 #define MUDUO_BASE_ALLOCATOR_MEM_POOL_H
 
+#include <muduo/config.h>
 #include <functional>
 #include <cassert>
 #include <cstdlib>
@@ -168,10 +169,50 @@ private:
 
 using MemoryPool = detail::mem_pool;
 
-/// @brief 由内存池构造的实例的"删除器"类型, 为适配于智能制造
+/// @brief 由内存池构造的实例的"删除器"类型, 为适配于智能指针
 template <typename T>
 using deleter_t = std::function<void(T* p)>; 
 
+/**
+ * @brief Destroy the instance and deallocate the storage pointed by @c p
+ * @tparam T Type of the instance whose is allocated from memory pool
+ * @tparam Base The base class of T, if existing.
+*/
+template <typename T, typename Base = T>
+void DestroyWithMemPool(Base* p, MemoryPool* pool) {
+    p->~Base();                     // destroy the instance
+    pool->deallocate(p, sizeof(T)); // deallocate
+};
+
+namespace detail {
+
+/// @brief CRTP, Enable the class @c Derive to be allocated from the memory pool
+template <typename Derive>
+class ManagedByMempoolAble {
+public:
+    /// @brief Use @c muduo::base::MemoryPool to allocate storage 
+    /// @note The method will hide the global operator new for this class
+    static void* operator new(size_t size, base::MemoryPool* pool) {
+        return pool->allocate(size);
+    }
+
+    /// @brief The method corresponds to @c operator new(size_t size, base::MemoryPool* pool),
+    /// Only will be invoked When the key @c new throws a exception by C++ Runtime System
+    /// @note The method will hide the global operator delete for this class
+    static void operator delete(void* p, base::MemoryPool* pool) {
+        pool->deallocate(p, sizeof(Derive));
+    }
+
+    // /// Explicitly declare @c Derive::operator new(), uses the global new operator
+    // static void* operator new(size_t size)
+    // { return ::operator new(size); }
+
+    // /// Explicitly declare @c Derive::operator delete(), uses the global delete operator
+    // static void operator delete(void* p)
+    // { ::operator delete(p); }
+};
+
+} // namespace detail 
 } // namespace base 
 } // namespace muduo 
 

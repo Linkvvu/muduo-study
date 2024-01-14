@@ -16,9 +16,7 @@ public:
     /// The type traits Required by STL Allocator standard
     using value_type = T;
 
-    simple_allocator()
-        : alloc_(nullptr)
-        {}
+    simple_allocator() = delete;
 
     /// 为满足分配器传播机制的构造函数
     template <typename V>
@@ -26,7 +24,7 @@ public:
         : alloc_(another.alloc_)
         { }
 
-    simple_allocator(const std::shared_ptr<Alloc>& alloc) 
+    /* explicit */ simple_allocator(const std::shared_ptr<Alloc>& alloc) 
             : alloc_(alloc)
         { }
     
@@ -38,20 +36,14 @@ public:
     /// @param n The number of elements to be allocated
     T* allocate(size_t n)
     { 
-        if (alloc_)
-            return n == 0 ? nullptr : static_cast<T*>( alloc_->allocate(n * sizeof(T)) ); 
-        else
-            return std::allocator<T>().allocate(n);
+        return n == 0 ? nullptr : static_cast<T*>( alloc_->allocate(n * sizeof(T)) ); 
     }
 
     /// The interface Required by standard STL Allocator
     void deallocate(T* ptr, size_t n)
     {
         if (n != 0) {
-            if (alloc_)
-                alloc_->deallocate(ptr, n * sizeof(T));
-            else
-                std::allocator<T>().deallocate(ptr, n);
+            alloc_->deallocate(ptr, n * sizeof(T));
         }
     }
     
@@ -61,7 +53,7 @@ public:
 } // namespace detail 
 
 template <typename T>
-using alloctor = detail::simple_allocator<T, base::MemoryPool>;
+using allocator = detail::simple_allocator<T, base::MemoryPool>;
 
 } // namespace base 
 } // namespace muduo 

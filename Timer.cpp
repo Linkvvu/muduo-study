@@ -18,7 +18,12 @@ int CreateTimerfd() {
 
 Watcher::Watcher(TimerQueue* owner)
     : owner_(owner)
+#ifdef MUDUO_USE_MEMPOOL
+    , watcherChannel_(new (owner_->Owner()->GetMemoryPool().get()) Channel(owner_->Owner(), CreateTimerfd()),
+                    std::bind(&base::DestroyWithMemPool<Channel>, std::placeholders::_1, owner_->Owner()->GetMemoryPool().get()))
+#else
     , watcherChannel_(std::make_unique<Channel>(owner_->Owner(), CreateTimerfd()))
+#endif
 {
     watcherChannel_->EnableReading();
     watcherChannel_->SetReadCallback(std::bind(&Watcher::HandleExpiredTimers, this));

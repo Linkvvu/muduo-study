@@ -1,4 +1,3 @@
-#include <muduo/base/allocator/sgi_stl_alloc.h>
 #include <muduo/EventLoopThreadPool.h>
 #include <muduo/base/SocketOps.h>
 #include <muduo/TcpConnection.h>
@@ -12,10 +11,18 @@ using namespace muduo;
 TcpServer::TcpServer(EventLoop* loop, const InetAddr& addr, const std::string& name)
     : loop_(loop)
     , name_(name)
-    , addr_(std::make_unique<InetAddr>(addr))
-    , acceptor_(std::make_unique<Acceptor>(loop, addr, true))   // FIXME: set "option reuse-port" by evnironment-variable  
+    , addr_(addr)
+#ifdef MUDUO_USE_MEMPOOL
+    , acceptor_(new (loop_->GetMemoryPool().get()) Acceptor(loop_, addr_, true),
+            std::bind(&base::DestroyWithMemPool<Acceptor>, std::placeholders::_1, loop_->GetMemoryPool().get()))   // FIXME: set "option reuse-port" by evnironment-variable  
+    , ioThreadPool_(new (loop_->GetMemoryPool().get()) EventLoopThreadPool(loop_, name_),
+            std::bind(&base::DestroyWithMemPool<EventLoopThreadPool>, std::placeholders::_1, loop_->GetMemoryPool().get()))
+    , conns_(loop_->GetMemoryPool())
+#else
+    , acceptor_(std::make_unique<Acceptor>(loop_, addr_, true))   // FIXME: set "option reuse-port" by evnironment-variable  
     , ioThreadPool_(std::make_unique<EventLoopThreadPool>(loop, name_))
     , conns_()
+#endif
 {
     acceptor_->SetNewConnectionCallback(std::bind(&TcpServer::HandleNewConnection, this,
         std::placeholders::_1, std::placeholders::_2));    
@@ -46,16 +53,17 @@ void TcpServer::HandleNewConnection(int connfd, const InetAddr& remote_addr) {
     EventLoop* cur_loop = ioThreadPool_->GetNextLoop();
 
     TcpConnectionPtr new_conn_ptr;
-    if (loop_->GetMemoryPool()) {
-        // be allocated from memory pool
-        new_conn_ptr = std::allocate_shared<TcpConnection, base::alloctor<TcpConnection>>(
-            base::alloctor<TcpConnection>(loop_->GetMemoryPool()),
-            cur_loop, std::move(new_conn_name), connfd, local_addr, remote_addr
-        );
-    } else {
-        // be allocated from heap
-        new_conn_ptr = std::make_shared<TcpConnection>(cur_loop, std::move(new_conn_name), connfd, local_addr, remote_addr);
-    }
+#ifdef MUDUO_USE_MEMPOOL
+    // The TcpConnection instance be allocated from memory pool
+    assert(loop_->GetMemoryPool());
+    new_conn_ptr = std::allocate_shared<TcpConnection, base::allocator<TcpConnection>>(
+        base::allocator<TcpConnection>(loop_->GetMemoryPool()),
+        cur_loop, new_conn_name, connfd, local_addr, remote_addr
+    );
+#else
+    // The TcpConnection instance be allocated from heap
+    new_conn_ptr = std::make_shared<TcpConnection>(cur_loop, new_conn_name, connfd, local_addr, remote_addr);
+#endif
 
     LOG_INFO << "TcpServer::HandleNewConnection: new connection [" << new_conn_name << "] from " << remote_addr.GetIpPort();
     conns_[new_conn_name] = new_conn_ptr;   // add current connection to list

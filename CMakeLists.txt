@@ -3,13 +3,14 @@ cmake_minimum_required(VERSION 3.5)
 project(muduo CXX)
 
 if(NOT CMAKE_BUILD_TYPE)
-  set(CMAKE_BUILD_TYPE Release STRINGS)
+  set(CMAKE_BUILD_TYPE Release)
 endif()
 
 message(STATUS "Current BUILD_TYPE=${CMAKE_BUILD_TYPE}")
 
 if(CMAKE_PROJECT_NAME STREQUAL "muduo")
-  option(MUDUO_UNIT_TESTS "Build unit-tests of muduo" ON)
+  option(MUDUO_USE_MEMPOOL "Enable memory pool" ON)
+  option(MUDUO_UNIT_TESTS "Build unit-tests of muduo" OFF)
 endif()
 
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
@@ -24,12 +25,15 @@ set(CMAKE_CXX_FLAGS_RELEASE "-O3 -DNDEBUG")
 
 # Set graceful project layout
 include(GNUInstallDirs)
+
+configure_file(config.h.in ${CMAKE_INSTALL_INCLUDEDIR}/muduo/config.h)
+
 # Set the output path for binary for build-tree
-set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/${CMAKE_INSTALL_BINDIR})
+set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/${CMAKE_INSTALL_BINDIR})
 # Set the output path for static libary for build-tree
-set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/${CMAKE_INSTALL_LIBDIR})
+set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/${CMAKE_INSTALL_LIBDIR})
 # Set the output path for dynamic libary for build-tree
-set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/${CMAKE_INSTALL_LIBDIR})
+set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/${CMAKE_INSTALL_LIBDIR})
 
 # print current compile flags
 string(TOUPPER ${CMAKE_BUILD_TYPE} CMAKE_BUILD_TYPE_UPPER)
@@ -41,7 +45,7 @@ message(STATUS "CXX_FLAGS = " ${CXX_FLAGS_LIST} " " ${CXX_FLAGS_${CMAKE_BUILD_TY
 find_package(Boost REQUIRED)
 
 # include required directory of header
-include_directories(${CMAKE_SOURCE_DIR}/..)
+include_directories(${CMAKE_SOURCE_DIR}/.. ${CMAKE_BINARY_DIR}/${CMAKE_INSTALL_INCLUDEDIR})
 include_directories(${Boost_INCLUDE_DIRS})
 
 # collect sources
@@ -62,7 +66,6 @@ set(
     Socket.cpp
     Acceptor.cpp
     TcpServer.cpp
-    base/MemPool.cpp
     Buffer.cpp
     base/LogStream.cpp
     base/Logging.cpp
@@ -79,6 +82,7 @@ set_target_properties(
     PROPERTIES 
     OUTPUT_NAME muduo
 )
+
 target_link_libraries(muduoNet PUBLIC pthread)
 
 # compile unit-tests
@@ -100,6 +104,7 @@ set(
   TcpConnection.h
   TcpServer.h
   TimerType.h
+  ${CMAKE_BINARY_DIR}/${CMAKE_INSTALL_INCLUDEDIR}/muduo/config.h
 )
 
 set(

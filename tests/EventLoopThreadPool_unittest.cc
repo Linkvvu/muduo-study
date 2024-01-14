@@ -21,22 +21,22 @@ public:
     // 在test suite的第一个测试开始前调用
     static void SetUpTestSuite() {
         ::printf("main(): pid = %d, tid = %ld, loop = %p\n", ::getpid(), ::pthread_self(), &loop);
-        loop.RunAfter(std::chrono::seconds(10), std::bind(&EventLoop::Quit, &loop));
+        loop->RunAfter(std::chrono::seconds(10), std::bind(&EventLoop::Quit, loop));
     }
 
     // 在test suite的最后一个测试结束后调用
     static void TearDownTestSuite() {
-        loop.Loop();
+        loop->Loop();
     }
 
     EventLoop* GetBaseLoop()
-    { return &loop; }
+    { return loop; }
 
 private:
-    static EventLoop loop;
+    static EventLoop* loop;
 };
 
-EventLoop EventLoopThreadPoolTestFixture::loop;  // define class-static data member
+EventLoop* EventLoopThreadPoolTestFixture::loop = muduo::CreateEventLoop().get();  // define class-static data member
 
 TEST_F(EventLoopThreadPoolTestFixture, SingleThread) {
     Mock mock;

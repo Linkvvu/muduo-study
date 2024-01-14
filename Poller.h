@@ -19,7 +19,7 @@ class EventLoop;    // forward declaration
 */
 class Poller {
 protected:
-    using ChannelList_t = EventLoop::ChannelList_t;
+    using ChannelList = EventLoop::ChannelList;
     Poller(const Poller&) = delete; // non-copyable
     Poller(Poller&&) = delete;      // non-moveable
 
@@ -34,7 +34,7 @@ public:
      * Polls file descriptor for I/O events.
      * Must be called in the loop thread.
     */
-    virtual ReceiveTimePoint_t Poll(const TimeoutDuration_t& timeout, ChannelList_t* activeChannels) = 0;
+    virtual ReceiveTimePoint_t Poll(const TimeoutDuration_t& timeout, ChannelList* activeChannels) = 0;
 
     /**
      * call by EventLoop instance

@@ -35,7 +35,7 @@ void Socket::SetReuseAddr(bool on) {
 
 void muduo::Socket::SetTcpNoDelay(bool on) {
     int optval = on ? 1 : 0;
-    int ret = ::setsockopt(sockfd_, IPPROTO_TCP, TCP_NODELAY, &on, static_cast<socklen_t>(sizeof optval));
+    int ret = ::setsockopt(sockfd_, IPPROTO_TCP, TCP_NODELAY, &optval, static_cast<socklen_t>(sizeof optval));
     if (ret < 0) {
         LOG_SYSERR << "Socket::SetTcpNoDelay"; 
     }

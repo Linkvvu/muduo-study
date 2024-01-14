@@ -1,5 +1,6 @@
 #if !defined(MUDUO_ACCEPTOR_H)
 #define MUDUO_ACCEPTOR_H
+
 #include <muduo/InetAddr.h>
 #include <functional>
 #include <memory>
@@ -10,7 +11,11 @@ class EventLoop;    // forward declaration
 class Socket;       // forward declaration
 class Channel;      // forward declaration
 
+#ifdef MUDUO_USE_MEMPOOL
+class Acceptor final : public base::detail::ManagedByMempoolAble<Acceptor> {
+#else
 class Acceptor {
+#endif
     Acceptor(const Acceptor&) = delete;
     Acceptor& operator=(const Acceptor&) = delete;
 public:
@@ -41,8 +46,13 @@ private:
 private:
     EventLoop* const owner_;
     InetAddr addr_;
+#ifdef MUDUO_USE_MEMPOOL
+    std::unique_ptr<Socket, base::deleter_t<Socket>> listener_;
+    std::unique_ptr<Channel, base::deleter_t<Channel>> channel_;
+#else
     std::unique_ptr<Socket> listener_;
     std::unique_ptr<Channel> channel_;
+#endif
     int idleFd_;    // file-descriptor holder
     // std::atomic_flag listening_;
     std::atomic_bool listening_;

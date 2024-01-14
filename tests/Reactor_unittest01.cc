@@ -45,12 +45,12 @@ private:
 
 
 int main() {
-    EventLoop loop;
-    g_loop = &loop;
+    auto loop = muduo::CreateEventLoop();
+    g_loop = loop.get();
     
     InetAddr listener_addr(8888);
     Test t(g_loop, listener_addr);
     t.start();
     
-    loop.Loop();
+    loop->Loop();
 }

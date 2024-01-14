@@ -4,7 +4,9 @@
 #include <muduo/TimerQueue.h>
 #include <muduo/Channel.h>
 #include <muduo/Bridge.h>
-#include <new>
+#ifdef MUDUO_USE_MEMPOOL
+    #include <new>  // emplacement new
+#endif
 #include <chrono>
 #include <cassert>
 #include <sys/poll.h>
@@ -16,6 +18,7 @@ namespace {
 }
 
 namespace muduo {
+
 using namespace std::chrono;
 
 const EventLoop::TimeoutDuration_t EventLoop::kPollTimeout = duration_cast<EventLoop::TimeoutDuration_t>(seconds(5));
@@ -38,74 +41,80 @@ const EventLoop::TimeoutDuration_t EventLoop::kPollTimeout = duration_cast<Event
  * +--------------------------------------+
  * @endcode 
  */
-EventLoop::EventLoop(const std::shared_ptr<base::MemoryPool>& pool)
-    : memPool_(pool)
-    , threadId_(::pthread_self())
-    , looping_(false)
-    , quit_(false)
-    , eventHandling_(false)
-    , poller_(std::make_unique<detail::PollPoller>(this))
-    , activeChannels_(base::alloctor<Channel*>(GetMemoryPool()))
-    , timerQueue_(std::make_unique<TimerQueue>(this))
-    , bridge_(std::make_unique<Bridge>(this))
-    , pendingCbsQueue_(base::alloctor<PendingEventCb_t>(GetMemoryPool()))   // Use base::allocator to allocate store
-    , callingPendingCbs_(false)
-{
-    LOG_DEBUG << "EventLoop is created in thread " << threadId_;
-    if (tl_loop_inThisThread != nullptr) {
-        LOG_FATAL << "Another EventLoop instance " << tl_loop_inThisThread
-                << " exists in this thread";
-    } else {
-        tl_loop_inThisThread = this;
+#ifdef MUDUO_USE_MEMPOOL
+    std::unique_ptr<EventLoop, base::deleter_t<EventLoop>> EventLoop::Create() {
+        static_assert(sizeof(EventLoop) <= base::MemoryPool::kMax_Bytes, "EventLoop实例应当必须被分配在内存池中，而不是被转调用至一级配置器");
+        
+        // 该内存池生命周期由shared_ptr管理
+        auto pool = std::make_shared<base::MemoryPool>();   // create a memory pool instance
+
+        /*
+            The EventLoop instance is constructed in the memory pool,
+            so can`t use "delete" key to clear the instance,
+            just need to call EventLoop::destructor to destroy the object,
+            then deallocate the space to allocator
+        */ 
+        base::deleter_t<EventLoop> deleter = [pool](EventLoop* loop) {  // shared count +1
+            loop->~EventLoop();
+            pool->deallocate(loop, sizeof (*loop));  // return space to MemoryPool instance
+
+            // when lambda exit, The Instance of memory pool held by EventLoop object will be destroyed (if shared count is 1)
+        };
+
+        EventLoop* loop_ptr = nullptr;
+        loop_ptr = new (pool.get()) EventLoop(pool);    // Be constructed in the specified memory pool instance
+        assert(loop_ptr != nullptr);    // 当构造函数抛出异常，loop_ptr == nullptr
+
+        return std::unique_ptr<EventLoop, base::deleter_t<EventLoop>>(loop_ptr, std::move(deleter)); 
     }
-}
 
-EventLoop::EventLoop()
-    : memPool_(nullptr) 
-    , threadId_(::pthread_self())
-    , looping_(false)
-    , quit_(false)
-    , eventHandling_(false)
-    , poller_(std::make_unique<detail::PollPoller>(this))
-    , activeChannels_(base::alloctor<Channel*>())
-    , timerQueue_(std::make_unique<TimerQueue>(this))
-    , bridge_(std::make_unique<Bridge>(this))
-    , pendingCbsQueue_(base::alloctor<PendingEventCb_t>())
-    , callingPendingCbs_(false)
-{
-    LOG_DEBUG << "EventLoop is created in thread " << threadId_;
-    if (tl_loop_inThisThread != nullptr) {
-        LOG_FATAL << "Another EventLoop instance " << tl_loop_inThisThread
-                << " exists in this thread";
-    } else {
-        tl_loop_inThisThread = this;
+    EventLoop::EventLoop(const std::shared_ptr<base::MemoryPool>& pool)
+        : threadId_(::pthread_self())
+        , looping_(false)
+        , quit_(false)
+        , eventHandling_(false)
+        , memPool_(pool)
+        , poller_(new (memPool_.get()) PollPoller(this), std::bind(&base::DestroyWithMemPool<PollPoller, Poller>, std::placeholders::_1, memPool_.get()))
+        , timerQueue_(new (memPool_.get()) TimerQueue(this), std::bind(&base::DestroyWithMemPool<TimerQueue>, std::placeholders::_1, memPool_.get()))
+        , activeChannels_(base::allocator<Channel*>(GetMemoryPool()))
+        , bridge_(new (memPool_.get()) Bridge(this), std::bind(&base::DestroyWithMemPool<Bridge>, std::placeholders::_1, memPool_.get()))
+        , pendingCbsQueue_(base::allocator<PendingEventCb_t>(GetMemoryPool()))   // Use base::allocator to allocate store
+        , callingPendingCbs_(false)
+    {
+        LOG_DEBUG << "EventLoop is created in thread " << threadId_;
+        if (tl_loop_inThisThread != nullptr) {
+            LOG_FATAL << "Another EventLoop instance " << tl_loop_inThisThread
+                    << " exists in this thread";
+        } else {
+            tl_loop_inThisThread = this;
+        }
     }
-}
+#else
+    std::unique_ptr<EventLoop> EventLoop::Create() {
+        return std::unique_ptr<EventLoop>(new EventLoop()); 
+    }
 
-std::unique_ptr<EventLoop, base::deleter_t<EventLoop>> EventLoop::Create() {
-    static_assert(sizeof(EventLoop) <= base::MemoryPool::kMax_Bytes, "EventLoop实例应当必须被分配在内存池中，而不是被转调用至一级配置器");
-    
-    auto pool = std::make_shared<base::MemoryPool>();   // create a memory pool instance
-
-    /*
-        The EventLoop instance is constcuted in the memory pool,
-        so can`t use "delete" key to clear the instance,
-        just need to call EventLoop::destrcutor.
-    */ 
-    base::deleter_t<EventLoop> deleter = [pool](EventLoop* loop) {
-        loop->~EventLoop();
-        pool->deallocate(loop, sizeof (*loop));  // return space to MemoryPool instance
-
-        // when lambda exit, The Instance of memory pool held by EventLoop object will be destroyed (if shared count is 1)
-    };
-
-    base::MemoryPool* pool_ptr = pool.get();
-    EventLoop* loop_ptr = nullptr;
-    loop_ptr = new (pool_ptr) EventLoop(pool);    // Be constructed in the specificed memory pool instance
-    assert(loop_ptr != nullptr);    // 当构造函数抛出异常，loop_ptr == nullptr
-
-    return std::unique_ptr<EventLoop, base::deleter_t<EventLoop>>(loop_ptr, std::move(deleter)); 
-}
+    EventLoop::EventLoop()
+        : threadId_(::pthread_self())
+        , looping_(false)
+        , quit_(false)
+        , eventHandling_(false)
+        , poller_(std::make_unique<detail::PollPoller>(this))
+        , timerQueue_(std::make_unique<TimerQueue>(this))
+        , activeChannels_()
+        , bridge_(std::make_unique<Bridge>(this))
+        , pendingCbsQueue_()
+        , callingPendingCbs_(false)
+    {
+        LOG_DEBUG << "EventLoop is created in thread " << threadId_;
+        if (tl_loop_inThisThread != nullptr) {
+            LOG_FATAL << "Another EventLoop instance " << tl_loop_inThisThread
+                    << " exists in this thread";
+        } else {
+            tl_loop_inThisThread = this;
+        }
+    }
+#endif
 
 EventLoop::~EventLoop() {
     LOG_DEBUG << "EventLoop " << this << " of thread " << threadId_
@@ -208,7 +217,11 @@ void EventLoop::RunInEventLoop(const PendingEventCb_t& cb) {
 }
 
 void EventLoop::HandlePendingCallbacks() {
-    std::vector<PendingEventCb_t, base::alloctor<PendingEventCb_t>> tmp_queue(GetMemoryPool());
+#ifdef MUDUO_USE_MEMPOOL
+    std::vector<PendingEventCb_t, base::allocator<PendingEventCb_t>> tmp_queue(GetMemoryPool());
+#else
+    std::vector<PendingEventCb_t> tmp_queue;
+#endif
     callingPendingCbs_.store(true);
     {   // 缩短临界区大小
         std::lock_guard<std::mutex> guard(mtx_);
@@ -226,15 +239,6 @@ void EventLoop::Quit() {
     if (!IsInLoopThread()) {
         bridge_->WakeUp();
     }
-}
-
-void* EventLoop::operator new(size_t size, base::MemoryPool* pool) {
-    return pool->allocate(size);
-}
-
-
-void EventLoop::operator delete(void* p, base::MemoryPool* pool) {
-    pool->deallocate(p, sizeof(EventLoop));
 }
 
 }

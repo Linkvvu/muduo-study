@@ -42,16 +42,16 @@ EventLoop* EventLoopThread::Run() {
 }
 
 void EventLoopThread::ThreadFunc() {
-    EventLoop loop; // create a EventLoop on stack
-    
+    // EventLoop loop; // create a EventLoop on stack
+    EventLoopPtr loop = muduo::CreateEventLoop();
     if (initCb_.operator bool()) {
-        initCb_(&loop);
+        initCb_(loop.get());
     }
 
     {
         std::lock_guard<std::mutex> guard(mtx_);
         if (isExit_ == false) {
-            loop_ = &loop;
+            loop_ = loop.get();
         } else {
             cv_.notify_one();
             return;
@@ -59,7 +59,7 @@ void EventLoopThread::ThreadFunc() {
     }
     cv_.notify_one();
 
-    loop.Loop();   // start loop
+    loop->Loop();   // start loop
 
     std::lock_guard<std::mutex> guard(mtx_);
     loop_ = nullptr;
