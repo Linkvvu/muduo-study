@@ -59,9 +59,10 @@ void TcpConnection::StepIntoDestroyed() {
     State expect = connected;
     if (state_.compare_exchange_strong(expect, disconnected)) { // CAS
         chan_->disableAllEvents();
-    } else if (expect == disconnecting) {   // when TcpServer is destroyed And the state of sockfd is disconnecting
-        chan_->disableAllEvents();
-    }
+    } 
+    // else if (expect == disconnecting) {   // when TcpServer is destroyed And the state of sockfd is disconnecting
+    //     chan_->disableAllEvents();
+    // }
     connectionCb_(shared_from_this());
     chan_->Remove();
 }

@@ -3,6 +3,7 @@
 
 #include <muduo/base/allocator/sgi_stl_alloc.h>
 #include <muduo/Callbacks.h>
+#include <string>
 #include <memory>
 #include <vector>
 #include <atomic>

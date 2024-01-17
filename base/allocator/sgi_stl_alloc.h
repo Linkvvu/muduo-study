@@ -3,6 +3,7 @@
 
 #include <muduo/base/allocator/mem_pool.h>
 #include <memory>
+#include <type_traits>
 
 
 namespace muduo {
@@ -15,6 +16,7 @@ class simple_allocator {
 public:
     /// The type traits Required by STL Allocator standard
     using value_type = T;
+    using propagate_on_container_swap = std::false_type; // The allocator doesn't swap when std::container swap
 
     simple_allocator() = delete;
 
@@ -46,7 +48,11 @@ public:
             alloc_->deallocate(ptr, n * sizeof(T));
         }
     }
-    
+
+    bool operator ==(simple_allocator<T, Alloc>& other) {
+        return this->alloc_ == other.alloc_;
+    }
+
     std::shared_ptr<Alloc> alloc_;  // Aggregation
 };
 

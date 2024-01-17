@@ -42,7 +42,7 @@ string(REPLACE ";" " " CXX_FLAGS_${CMAKE_BUILD_TYPE_UPPER}_LIST "${CMAKE_CXX_FLA
 message(STATUS "CXX_FLAGS = " ${CXX_FLAGS_LIST} " " ${CXX_FLAGS_${CMAKE_BUILD_TYPE_UPPER}_LIST})
 
 # search required package
-find_package(Boost REQUIRED)
+# find_package(Boost REQUIRED)
 
 # include required directory of header
 include_directories(${CMAKE_SOURCE_DIR}/.. ${CMAKE_BINARY_DIR}/${CMAKE_INSTALL_INCLUDEDIR})

@@ -53,7 +53,7 @@ void* malloc_alloc<unused>::oom_malloc(size_t n) {
     while (true) {
         handler = malloc_alloc<unused>::mmo_handler;
         if (handler == nullptr) {
-            throw std::bad_exception();
+            throw std::bad_alloc();
         }
 
         handler();
