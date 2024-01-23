@@ -37,17 +37,17 @@ void foo4() {
 
 int main() {
     LOG_INFO << "main(): tid=" << ::pthread_self() << ", Flag=" << g_flag;
-    auto loop = muduo::CreateEventLoop();
+    EventLoop loop;
     g_loop = EventLoop::GetCurrentThreadLoop();
 
     std::thread t(
         [&loop]() {
             LOG_INFO << "another thread: tid=" << ::pthread_self() << ", Flag=" << g_flag;
-            loop->RunAfter(std::chrono::seconds(1), foo1);
+            loop.RunAfter(std::chrono::seconds(1), foo1);
             LOG_INFO << "another thread: tid=" << ::pthread_self() << ", Flag=" << ", success to add task" << g_flag;
         }
     );
     t.join();
-    loop->Loop();
+    loop.Loop();
     LOG_INFO << "main(): tid=" << ::pthread_self() << ", Flag=" << g_flag;
 }

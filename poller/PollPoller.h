@@ -12,26 +12,13 @@ namespace detail {
 /**
  * IO Multiplexing with poll(2).
 */
+class PollPoller : public Poller {
 #ifdef MUDUO_USE_MEMPOOL
-class PollPoller final : public Poller
-                , public base::detail::ManagedByMempoolAble<PollPoller>
-{
-    private:
+private:
     using PollFdList = std::vector<struct pollfd, muduo::base::allocator<struct pollfd>>;
     using ChannelMap = std::unordered_map<int, Channel*, std::hash<int>, std::equal_to<int>, base::allocator<std::pair<const int, Channel*>>>;
-
-public:
-    /// non-placement delete operator 在带有虚拟析构函数的类中必须可见
-    static void operator delete(void* p) {
-        // debug
-        LOG_DEBUG << "PollPoller::operator delete(void*p) is being called, But the expectation is that the instance was allocated in the mempool,"
-                    " Do nothing now, memory-leaks may occur!";
-        // ::operator delete(p);
-    }
-
 #else
-class PollPoller : public Poller {
-    private:
+private:
     using PollFdList = std::vector<struct pollfd>;
     using ChannelMap = std::unordered_map<int, Channel*>;
 #endif

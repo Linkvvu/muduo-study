@@ -1,6 +1,7 @@
 #if !defined(MUDUO_TCPSERVER_H)
 #define MUDUO_TCPSERVER_H
 
+#include <muduo/base/allocator/Allocatable.h>
 #include <muduo/base/allocator/sgi_stl_alloc.h>
 #include <muduo/InetAddr.h>
 #include <muduo/Callbacks.h>
@@ -18,15 +19,21 @@ class EventLoopThreadPool;  // forward declaration
 /// @brief A non-copyable TCP-Server
 /// single-Reactor mode, Acceptor and IO-handler run in same thread
 #ifdef MUDUO_USE_MEMPOOL
-class TcpServer final : public base::detail::ManagedByMempoolAble<TcpServer> {
+class TcpServer : public base::detail::Allocatable {
+    using ConnectionsMap = std::unordered_map<std::string, TcpConnectionPtr, 
+                                            std::hash<std::string>, std::equal_to<std::string>,
+                                            base::allocator<std::pair<const std::string, TcpConnectionPtr>>>;
 #else
 class TcpServer {
+    using ConnectionsMap = std::unordered_map<std::string, TcpConnectionPtr>;
 #endif
     friend TcpConnection;
     TcpServer(const TcpServer&) = delete;
     TcpServer& operator=(const TcpServer&) = delete;
 
 public:
+    static std::unique_ptr<TcpServer> Create(EventLoop* loop, const InetAddr& addr, const std::string& name);
+
     explicit TcpServer(EventLoop* loop, const InetAddr& addr, const std::string& name);
     ~TcpServer() noexcept;  // force out-line dtor, for std::unique_ptr members.
     std::string GetIp() const;
@@ -59,19 +66,8 @@ private:
     EventLoop* loop_;
     std::string name_;
     InetAddr addr_;
-#ifdef MUDUO_USE_MEMPOOL
-    std::unique_ptr<Acceptor, base::deleter_t<Acceptor>> acceptor_;
-    std::unique_ptr<EventLoopThreadPool, base::deleter_t<EventLoopThreadPool>> ioThreadPool_;
-
-    using ConnectionsMap = std::unordered_map<std::string, TcpConnectionPtr, 
-                                            std::hash<std::string>, std::equal_to<std::string>,
-                                            base::allocator<std::pair<const std::string, TcpConnectionPtr>>>;
-#else
     std::unique_ptr<Acceptor> acceptor_;
     std::unique_ptr<EventLoopThreadPool> ioThreadPool_;
-    
-    using ConnectionsMap = std::unordered_map<std::string, TcpConnectionPtr>;
-#endif
     ConnectionsMap conns_;
     std::atomic_bool serving_ {false};
 
@@ -79,7 +75,7 @@ private:
     ConnectionCallback_t connectionCb_ {nullptr};
     MessageCallback_t messageCb_ {nullptr};
     WriteCompleteCallback_t writeCompleteCb_ {nullptr};
-    /* allways in loop-thread */
+    /* always in loop-thread */
     uint64_t nextConnID_ {0};
 };
 

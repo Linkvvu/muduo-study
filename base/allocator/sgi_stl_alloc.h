@@ -2,6 +2,9 @@
 #define MUDUO_BASE_ALLOCATOR_ALLOC_H
 
 #include <muduo/base/allocator/mem_pool.h>
+
+#ifdef MUDUO_USE_MEMPOOL
+
 #include <memory>
 #include <type_traits>
 
@@ -26,7 +29,7 @@ public:
         : alloc_(another.alloc_)
         { }
 
-    /* explicit */ simple_allocator(const std::shared_ptr<Alloc>& alloc) 
+    /* explicit */ simple_allocator(Alloc* alloc) 
             : alloc_(alloc)
         { }
     
@@ -53,7 +56,7 @@ public:
         return this->alloc_ == other.alloc_;
     }
 
-    std::shared_ptr<Alloc> alloc_;  // Aggregation
+    Alloc* alloc_;  // Aggregation
 };
 
 } // namespace detail 
@@ -63,5 +66,7 @@ using allocator = detail::simple_allocator<T, base::MemoryPool>;
 
 } // namespace base 
 } // namespace muduo 
+
+#endif
 
 #endif // MUDUO_BASE_ALLOCATOR_ALLOC_H

@@ -1,7 +1,6 @@
 #if !defined(MUDUO_BUFFER_H)
 #define MUDUO_BUFFER_H
 
-#include <muduo/base/allocator/sgi_stl_alloc.h>
 #include <muduo/base/Endian.h>
 #include <vector>
 #include <cassert>
@@ -17,22 +16,14 @@ namespace muduo {
 /// 0      <=      readerIndex   <=   writerIndex    <=     size
 /// @endcode
 
-/// a copyable buffer for send/recv datas to/from file descriptor
+class TcpConnection;    // forward declaration
+
+/// a copyable buffer for send/recv data to/from file descriptor
 class Buffer {
+    friend TcpConnection;
 public:
     static const size_t kCheapPrepend = 8;
-#ifdef MUDUO_USE_MEMPOOL
-    static const size_t kInitialSize = base::MemoryPool::kMax_Bytes;
-    explicit Buffer(const base::allocator<char>& allocator, size_t initialSize = kInitialSize)
-        : buffer_(kCheapPrepend + initialSize, 0, allocator)
-        , readerIndex_(kCheapPrepend)
-        , writerIndex_(kCheapPrepend)
-    {
-        assert(ReadableBytes() == 0);
-        assert(WriteableBytes() == initialSize);
-        assert(PrependableBytes() == kCheapPrepend);
-    }
-#else
+
     static const size_t kInitialSize = 1024;
     explicit Buffer(size_t initialSize = kInitialSize)
         : buffer_(kCheapPrepend + initialSize, 0)
@@ -43,7 +34,6 @@ public:
         assert(WriteableBytes() == initialSize);
         assert(PrependableBytes() == kCheapPrepend);
     }
-#endif
 
 public:
     Buffer(const Buffer&) = default;
@@ -311,11 +301,7 @@ private:
     }
 
 private: 
-#ifdef MUDUO_USE_MEMPOOL
-    std::vector<char, base::allocator<char>> buffer_;
-#else
     std::vector<char> buffer_;
-#endif
     size_t readerIndex_;
     size_t writerIndex_;
 };

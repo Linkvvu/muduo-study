@@ -1,6 +1,78 @@
 #include <muduo/base/allocator/mem_pool.h>
 
+#ifdef MUDUO_USE_MEMPOOL
+
+#include <muduo/base/Logging.h>
+#include <muduo/EventLoop.h>
+
 using namespace muduo::base::detail;
+
+namespace {
+    thread_local muduo::base::MemoryPool* tl_mempool_inThisThread = {nullptr};
+} // namespace 
+
+mem_pool::mem_pool(EventLoop* loop)
+    : loop_(loop)
+{
+    if (tl_mempool_inThisThread != nullptr) {
+        LOG_FATAL << "Another Mempool instance " << tl_mempool_inThisThread
+                << " exists in this thread";
+    } else {
+        tl_mempool_inThisThread = this;
+    }
+}
+
+muduo::base::detail::mem_pool::~mem_pool() {
+    loop_->AssertInLoopThread();
+
+    for (void* p : allocated_area) {
+        ::free(p);
+    }
+    allocated_area.clear();
+    tl_mempool_inThisThread = nullptr;
+}
+
+mem_pool* mem_pool::GetCurrentThreadMempool() {
+    return tl_mempool_inThisThread;
+}
+
+void* mem_pool::allocate(size_t n) {
+    if (n > static_cast<size_t>(kMax_Bytes)) {
+        return detail::master_alloc::allocate(n);
+    }
+
+    loop_->AssertInLoopThread();
+
+    list_header_t target_list = nullptr;
+    obj* result;
+
+    target_list = free_lists + GET_FREELIST_INDEX(n);    // Get target list
+    result = *target_list;
+        
+    if (result == nullptr) {    // The list has`t available space
+        void* r = refill(ROUND_UP(n));
+        return r;
+    }
+
+    *target_list = result->next;  // Adjust current list 
+    return result;
+}
+
+void mem_pool::deallocate(void* ptr, size_t n) {
+    if (n > static_cast<size_t>(kMax_Bytes)) {
+        detail::master_alloc::deallocate(ptr, n);
+        return;
+    }
+    
+    loop_->AssertInLoopThread();
+
+    obj* recycle = static_cast<obj*>(ptr);
+    list_header_t target_list = nullptr;
+
+    target_list = free_lists + GET_FREELIST_INDEX(n);
+    recycle->next = *target_list;
+    *target_list = recycle;
+}
 
 void* mem_pool::refill(size_t n) {
     int n_objs = 20;
@@ -84,3 +156,5 @@ char* mem_pool::chunk_alloc(size_t size, int* n_objs) {
         return chunk_alloc(size, n_objs);
     }
 }
+
+#endif

@@ -26,7 +26,11 @@ void EventLoopThreadPool::BuildAndRun() {
 
     for (size_t i = 0; i < poolSize_; i++) {
         std::string cur_trd_name = name_+":"+std::to_string(i);
+#ifdef MUDUO_USE_MEMPOOL
+        threadPool_.emplace_back(new (baseLoop_->GetMemoryPool()) EventLoopThread(initCb_, cur_trd_name));
+#else
         threadPool_.emplace_back(std::make_unique<EventLoopThread>(initCb_, cur_trd_name));
+#endif
         loops_.push_back(threadPool_[i]->Run());
     }
     assert(loops_.size() == poolSize_);

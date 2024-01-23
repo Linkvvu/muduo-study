@@ -1,6 +1,7 @@
 #if !defined(MUDUO_POLLER_H)
 #define MUDUO_POLLER_H
 
+#include <muduo/base/allocator/Allocatable.h>
 #include <muduo/EventLoop.h>
 #include <vector>
 #include <chrono>
@@ -17,7 +18,12 @@ class EventLoop;    // forward declaration
  * 使用IO-multiplexing，将轮询到的结果(coming IO-event)赋值给fd对应的Channel，将Channels返回给Loop
  * Loop根据channels的coming IO-event挨个调用(ensure thread-safely)各自设置的handle functions, 以响应IO-event
 */
+
+#ifdef MUDUO_USE_MEMPOOL
+class Poller : public base::detail::Allocatable {
+#else
 class Poller {
+#endif
 protected:
     using ChannelList = EventLoop::ChannelList;
     Poller(const Poller&) = delete; // non-copyable
@@ -28,7 +34,8 @@ public:
     using TimeoutDuration_t = std::chrono::milliseconds;
 
     Poller(EventLoop* loop);
-    virtual ~Poller() noexcept = default;   // abstract base class require virtual destructors
+    
+    virtual ~Poller() noexcept = default;
     
     /**
      * Polls file descriptor for I/O events.

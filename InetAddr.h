@@ -1,7 +1,7 @@
 #if !defined(MUDUO_INETADDR_H)
 #define MUDUO_INETADDR_H
 
-#include <muduo/base/allocator/sgi_stl_alloc.h>
+#include <muduo/base/allocator/Allocatable.h>
 #include <arpa/inet.h>
 #include <cstddef>  // for offsetof
 #include <string>
@@ -39,7 +39,7 @@ static_assert(offsetof(SockAddr, SockAddr::inet4) == 0 &&
 
 /// @brief Represents a copyable IPv4 OR IPv6 address 
 #ifdef MUDUO_USE_MEMPOOL
-class InetAddr final : public base::detail::ManagedByMempoolAble<InetAddr> {
+class InetAddr : public base::detail::Allocatable {
 #else
 class InetAddr {
 #endif

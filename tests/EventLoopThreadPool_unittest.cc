@@ -21,22 +21,22 @@ public:
     // 在test suite的第一个测试开始前调用
     static void SetUpTestSuite() {
         ::printf("main(): pid = %d, tid = %ld, loop = %p\n", ::getpid(), ::pthread_self(), &loop);
-        loop->RunAfter(std::chrono::seconds(10), std::bind(&EventLoop::Quit, loop));
+        loop.RunAfter(std::chrono::seconds(10), std::bind(&EventLoop::Quit, &loop));
     }
 
     // 在test suite的最后一个测试结束后调用
     static void TearDownTestSuite() {
-        loop->Loop();
+        loop.Loop();
     }
 
     EventLoop* GetBaseLoop()
-    { return loop; }
+    { return &loop; }
 
 private:
-    static EventLoop* loop;
+    static EventLoop loop;
 };
 
-EventLoop* EventLoopThreadPoolTestFixture::loop = muduo::CreateEventLoop().get();  // define class-static data member
+EventLoop EventLoopThreadPoolTestFixture::loop;  // define class-static data member
 
 TEST_F(EventLoopThreadPoolTestFixture, SingleThread) {
     Mock mock;
@@ -49,7 +49,7 @@ TEST_F(EventLoopThreadPoolTestFixture, SingleThread) {
         mock.init(loop);
     });
     model.BuildAndRun();
-    
+
     ASSERT_EQ(model.GetNextLoop(), this->GetBaseLoop());
     ASSERT_EQ(model.GetNextLoop(), this->GetBaseLoop());
     ASSERT_EQ(model.GetNextLoop(), this->GetBaseLoop());
@@ -60,7 +60,7 @@ TEST_F(EventLoopThreadPoolTestFixture, AnotherThread) {
     Mock mock;
     EventLoopThreadPool model(this->GetBaseLoop(), "another");
 
-    // Can`t perform following statement Beacuse 'io-thread loop instance' is not created now
+    // Can`t perform following statement Because 'io-thread loop instance' is not created now
     // EXPECT_CALL(mock, init(model.GetNextLoop())).Times(1);
     model.SetPoolSize(1);
     model.SetThreadInitCallback([&mock](EventLoop* loop) {
@@ -68,10 +68,10 @@ TEST_F(EventLoopThreadPoolTestFixture, AnotherThread) {
     });
     model.BuildAndRun();
 
-    // Can`t perform following statement Beacuse 'init callback' is executed as soon as it's created
+    // Can`t perform following statement Because 'init callback' is executed as soon as it's created
     // EXPECT_CALL(mock, init(model.GetNextLoop())).Times(1);
     EXPECT_CALL(mock, print(model.GetNextLoop())).Times(1);
-    
+
     EventLoop* nextLoop = model.GetNextLoop();
     nextLoop->RunAfter(std::chrono::seconds(2), std::bind(&Mock::print, &mock, nextLoop));
 
@@ -87,7 +87,7 @@ TEST_F(EventLoopThreadPoolTestFixture, ThreeThreads) {
     model.SetPoolSize(3);
     model.SetThreadInitCallback(std::bind(&Mock::init, &mock, std::placeholders::_1));
     model.BuildAndRun();
-    
+
     EventLoop* first_loop = model.GetNextLoop();
     EventLoop* second_loop = model.GetNextLoop();
     EventLoop* third_loop = model.GetNextLoop();

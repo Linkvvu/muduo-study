@@ -8,26 +8,38 @@
 
 using namespace muduo;
 
-
-
 TcpConnection::TcpConnection(EventLoop* owner, const std::string& name, int sockfd, const InetAddr& local_addr, const InetAddr& remote_addr)
     : loop_(owner)
     , name_(name)
     , localAddr_(local_addr)
     , remoteAddr_(remote_addr)
-#ifdef MUDUO_USE_MEMPOOL
-    , socket_(new (loop_->GetMemoryPool().get()) Socket(sockfd),
-        std::bind(&base::DestroyWithMemPool<Socket>, std::placeholders::_1, loop_->GetMemoryPool().get()))
-    , chan_(new (loop_->GetMemoryPool().get()) Channel(owner, sockfd),
-        std::bind(&base::DestroyWithMemPool<Channel>, std::placeholders::_1, loop_->GetMemoryPool().get()))
-    , inputBuffer_(owner->GetMemoryPool())  // Initially allocate from the memory pool
-    , outputBuffer_(owner->GetMemoryPool())
-#else
-    , socket_(std::make_unique<Socket>(sockfd))
-    , chan_(std::make_unique<Channel>(owner, sockfd))
+// #ifdef MUDUO_USE_MEMPOOL
+//     , socket_(new (loop_->GetMemoryPool()) Socket(sockfd),
+//         [this](Socket* obj) {
+//             obj->~Socket();
+//             this->loop_->RunInEventLoop([this, ptr = obj]() {
+//                 // when the program exits, it's fine that even if the callback is lost,
+//                 // because All the chunks will be freed when the mempool destroyed
+//                 this->loop_->GetMemoryPool()->deallocate(ptr, sizeof (Socket));
+//             });
+//         })
+//     , chan_(new (loop_->GetMemoryPool()) Channel(loop_, sockfd),
+//         [this](Channel* obj) {
+//             obj->~Channel();
+//             this->loop_->RunInEventLoop([this, ptr = obj]() {
+//                 this->loop_->GetMemoryPool()->deallocate(ptr, sizeof (Channel));
+//             });
+//         })
+// #else
+    , socket_(::new Socket(sockfd), [](Socket* s) {
+        ::delete s;
+    })
+    , chan_(::new Channel(owner, sockfd), [](Channel* c) {
+        ::delete c;
+    }) 
+// #endif
     , inputBuffer_()
     , outputBuffer_()
-#endif
 {
     chan_->SetReadCallback(std::bind(&TcpConnection::HandleRead, this, std::placeholders::_1));
     chan_->SetWriteCallback(std::bind(&TcpConnection::HandleWrite, this));
@@ -130,11 +142,7 @@ void TcpConnection::HandleWrite() {
 void TcpConnection::Shutdown() {
     TcpConnection::State expected = connected;
     if (state_.compare_exchange_strong(expected, disconnecting)) {  // CAS
-        /// FIXME: 如果TcpConnection::ShutdownInLoop被加入至pendingQueue
-        /// 但在调用绑定的TcpConnection::ShutdownInLoop回调之前，当前connection的引用计数为0了(即当前连接被销毁)
-        /// 那么，this指针将会成为野指针
-        /// FIXME: pass 'shard_ptr' instead of 'this' when binding the callback
-        loop_->RunInEventLoop(std::bind(&TcpConnection::ShutdownInLoop, this));
+        loop_->RunInEventLoop(std::bind(&TcpConnection::ShutdownInLoop, shared_from_this()));
     }
 }
 
@@ -153,8 +161,8 @@ void TcpConnection::Send(const char* buf, size_t len) {
             SendInLoop(buf, len);
         } else {
             // saved buf`s data, Prevent buf from being destroyed
-            std::string savedData(buf, len);
-            loop_->EnqueueEventLoop([savedData = std::move(savedData), guard = shared_from_this()]() {
+            std::string saved(buf, len);
+            loop_->EnqueueEventLoop([savedData = std::move(saved), guard = shared_from_this()]() {
                 guard->SendInLoop(savedData.c_str(), savedData.size());
             });
         }
@@ -167,7 +175,7 @@ void TcpConnection::SendInLoop(const char* buf, size_t len) {
     size_t remaining = len;
     bool faultError = false;
     if (state_ == disconnected) {
-        LOG_WARN << "disconnected, give up writing";
+        LOG_WARN << "disconnected, give up writing, connection[" << name_ << "]";
         return;
     }
     // if no thing in output queue, try writing directly
@@ -181,7 +189,7 @@ void TcpConnection::SendInLoop(const char* buf, size_t len) {
         } else {
             nwrote = 0;
             if (errno != EWOULDBLOCK) {
-                LOG_SYSERR << "TcpConnection::SendInLoop";
+                LOG_SYSERR << "TcpConnection::SendInLoop, connection[" << name_ << "]";
                 if (errno == EPIPE || errno == ECONNRESET)
                 {
                     faultError = true;

@@ -1,7 +1,7 @@
 #if !defined(MUDUO_BRIDGE_H)
 #define MUDUO_BRIDGE_H
 
-#include <muduo/base/allocator/mem_pool.h>
+#include <muduo/base/allocator/Allocatable.h>
 #include <memory>
 
 namespace muduo {
@@ -15,7 +15,7 @@ class Channel;      // forward declaration
  * Be used as an event wait/notify mechanism
 */
 #ifdef MUDUO_USE_MEMPOOL
-class Bridge final : public base::detail::ManagedByMempoolAble<Bridge> {
+class Bridge : public base::detail::Allocatable {
 #else
 class Bridge {
 #endif
@@ -29,11 +29,7 @@ private:
 
 private:
     EventLoop* const owner_;
-#ifdef MUDUO_USE_MEMPOOL
-    std::unique_ptr<Channel, base::deleter_t<Channel>> chan_; // wake-up fd channel
-#else
     std::unique_ptr<Channel> chan_; // wake-up fd channel
-#endif
 };
 
 }

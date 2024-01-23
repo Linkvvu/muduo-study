@@ -5,6 +5,7 @@
 #include <muduo/TcpConnection.h>
 #include <muduo/Callbacks.h>
 #include <memory>
+#include <csignal>
 #include <iostream>
 
 using namespace muduo;
@@ -45,12 +46,13 @@ private:
 
 
 int main() {
-    auto loop = muduo::CreateEventLoop();
-    g_loop = loop.get();
+    std::signal(SIGINT, [](int sig) { g_loop->Quit(); });
+    EventLoop loop;
+    g_loop = &loop;
     
     InetAddr listener_addr(8888);
     Test t(g_loop, listener_addr);
     t.start();
     
-    loop->Loop();
+    loop.Loop();
 }
