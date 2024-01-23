@@ -46,7 +46,7 @@ private:
  * @brief 负责注册Timerfd，监控并处理Timer的超时事件(通知TimerQueue处理所有超时的Timer)
  */
 #ifdef MUDUO_USE_MEMPOOL
-class Watcher final : public base::detail::ManagedByMempoolAble<Watcher> {
+class Watcher : public base::detail::Allocatable {
 #else
 class Watcher {
 #endif
@@ -75,11 +75,7 @@ private:
 
 private:
     TimerQueue* const owner_;   // 聚合
-#ifdef MUDUO_USE_MEMPOOL
-    std::unique_ptr<Channel, base::deleter_t<Channel>> watcherChannel_;
-#else
     std::unique_ptr<Channel> watcherChannel_;
-#endif
 };
 
 } // namespace muduo 

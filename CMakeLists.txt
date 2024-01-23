@@ -13,6 +13,11 @@ if(CMAKE_PROJECT_NAME STREQUAL "muduo")
   option(MUDUO_UNIT_TESTS "Build unit-tests of muduo" OFF)
 endif()
 
+if(MUDUO_USE_MEMPOOL)
+  message(STATUS "Will compile memory-pool module")
+endif(MUDUO_USE_MEMPOOL)
+
+
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_STANDARD 17)
 
@@ -123,6 +128,7 @@ set(
   PUB_BASE_ALLOCATOR_HEADERS 
   base/allocator/mem_pool.h
   base/allocator/sgi_stl_alloc.h
+  base/allocator/Allocatable.h
 )
 
 install(FILES ${PUB_HEADERS} DESTINATION include/muduo)

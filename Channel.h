@@ -1,6 +1,7 @@
 #if !defined(MUDUO_CHANNEL_H)
 #define MUDUO_CHANNEL_H
 
+#include <muduo/base/allocator/Allocatable.h>
 #include <muduo/EventLoop.h>
 #include <functional>
 #include <memory>
@@ -15,7 +16,7 @@ namespace muduo {
  * Channel is responsible to register and handle IO events
 */
 #ifdef MUDUO_USE_MEMPOOL
-class Channel final : public base::detail::ManagedByMempoolAble<Channel> {
+class Channel : public base::detail::Allocatable {
 #else
 class Channel {
 #endif
@@ -31,7 +32,7 @@ public:
     using ReceiveTimePoint_t = EventLoop::ReceiveTimePoint_t;
     using RDCallback_t = std::function<void(const ReceiveTimePoint_t&)>;
 
-    ~Channel() { 
+    ~Channel() {
         assert(!eventHandling_);
         /// TODO: assert(!addedToLoop_);
     };

@@ -1,5 +1,5 @@
 FROM ubuntu:latest
-WORKDIR /workspace
+WORKDIR /muduo
 
 RUN sed -i 's/archive.ubuntu.com/mirrors.aliyun.com/g' /etc/apt/sources.list
 
@@ -7,8 +7,8 @@ RUN apt-get update &&    \
     apt-get install -y build-essential cmake && \
     apt-get install -y libboost-all-dev
 
-COPY . ./muduo
+COPY . .
 
-RUN cd muduo && \
-    export INSTALL_DIR=/usr/local && \
-    bash ./build.sh
+ENV INSTALL_DIR=/usr/local
+
+RUN bash ./build.sh

@@ -50,12 +50,12 @@ private:
 };
 
 int main() {
-    auto loop = muduo::CreateEventLoop();
-    g_loop = loop.get();
+    EventLoop loop;
+    g_loop = &loop;
     
     InetAddr listener_addr(8888);
     EchoServer t(g_loop, listener_addr);
     t.Start();
     
-    loop->Loop();
+    loop.Loop();
 }

@@ -1,6 +1,7 @@
 #if !defined(MUDUO_TCPCONNECTION_H)
 #define MUDUO_TCPCONNECTION_H
 
+#include <muduo/base/allocator/Allocatable.h>
 #include <muduo/Buffer.h>
 #include <muduo/InetAddr.h>
 #include <muduo/TcpServer.h>  // for declare friend
@@ -13,10 +14,15 @@
 namespace muduo {
     
 class EventLoop;        // forward declaration
-class Channel;          // forward declaration
-class Socket;           // forward declaration
+class Channel;
+class Socket;
 
-class TcpConnection : public std::enable_shared_from_this<TcpConnection> {
+class TcpConnection : public std::enable_shared_from_this<TcpConnection>
+#ifdef MUDUO_USE_MEMPOOL
+                    , public base::detail::Allocatable {
+#else
+                    {
+#endif
     friend void TcpServer::HandleNewConnection(int connfd, const InetAddr& remote_addr);
     friend void TcpServer::RemoveConnectionInLoop(const TcpConnectionPtr& conn);
     friend TcpServer::~TcpServer() noexcept;
@@ -90,13 +96,13 @@ private:
     std::string name_;
     InetAddr localAddr_;
     InetAddr remoteAddr_;
-#ifdef MUDUO_USE_MEMPOOL
-    std::unique_ptr<Socket, base::deleter_t<Socket>> socket_;
-    std::unique_ptr<Channel, base::deleter_t<Channel>> chan_;
-#else
-    std::unique_ptr<Socket> socket_;
-    std::unique_ptr<Channel> chan_;
-#endif
+// #ifdef MUDUO_USE_MEMPOOL
+//     std::unique_ptr<Socket, std::function<void(Socket*)>> socket_;
+//     std::unique_ptr<Channel, std::function<void(Channel*)>> chan_;
+// #else
+    std::unique_ptr<Socket, std::function<void(Socket*)>> socket_;
+    std::unique_ptr<Channel, std::function<void(Channel*)>> chan_;
+// #endif
     std::atomic<State> state_ {connecting};
     std::any context_ {};  // C++ 17
     ConnectionCallback_t connectionCb_ {nullptr};

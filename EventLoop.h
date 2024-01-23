@@ -33,51 +33,28 @@ namespace {
 namespace muduo {
     using namespace detail;
 
-#ifdef MUDUO_USE_MEMPOOL
-class EventLoop final : public base::detail::ManagedByMempoolAble<EventLoop> {
-#else
 class EventLoop {
-#endif
     /// noncopyable & nonmoveable
     EventLoop(const EventLoop&) = delete;
-
-#ifdef MUDUO_USE_MEMPOOL
-    public:
-    /// @brief Factory pattern
-    /// @return A EventLoop instance within muduo::base::memory_pool 
-    static std::unique_ptr<EventLoop, base::deleter_t<EventLoop>> Create();
-
-    private:
-    /// Construct with memory pool, prevent create on stack 
-    /// @note Only use by EventLoop::Create
-    EventLoop(const std::shared_ptr<base::MemoryPool>& pool);
-#else
-    public:
-    /// @return A EventLoop instance
-    static std::unique_ptr<EventLoop> Create();
-
-    private:
-    /// @brief Default constructor
-    /// @return A EventLoop instance, don't use muduo::base::memory_pool 
-    /// @note Only use by EventLoop::Create
-    EventLoop();
-#endif
+    using PendingCallbacksQueue = std::vector<PendingEventCb_t>;
     
+#ifdef MUDUO_USE_MEMPOOL
+public:
+    using ChannelList = std::vector<Channel*, base::allocator<Channel*>>;
+#else
+public:
+    using ChannelList = std::vector<Channel*>;
+#endif
+
 public:
     using ReceiveTimePoint_t = std::chrono::system_clock::time_point;
     using TimeoutDuration_t = std::chrono::milliseconds;
-#ifdef MUDUO_USE_MEMPOOL
-    using ChannelList = std::vector<Channel*, base::allocator<Channel*>>;
-    private:
-    using PendingCallbacksQueue = std::vector<PendingEventCb_t, base::allocator<PendingEventCb_t>>; 
-#else
-    using ChannelList = std::vector<Channel*>;
-    private:
-    using PendingCallbacksQueue = std::vector<PendingEventCb_t>;
-#endif
-    static const TimeoutDuration_t kPollTimeout;
 
-public:
+    /// @brief Default constructor
+    /// @return A EventLoop instance
+    /// @note Only use by EventLoop::Create
+    EventLoop();
+
     ~EventLoop();
 
     /// @brief Must be called in the same thread as creation of the object.
@@ -138,13 +115,15 @@ public:
     void RunInEventLoop(const PendingEventCb_t& cb);
      
 #ifdef MUDUO_USE_MEMPOOL
-    const std::shared_ptr<base::MemoryPool>& GetMemoryPool() const {
-        return memPool_;
+    base::MemoryPool* GetMemoryPool() {
+        return memPool_.get();
     }
 #endif
 
-public:
     static EventLoop* GetCurrentThreadLoop();
+    
+private:
+    static const TimeoutDuration_t kPollTimeout;
 
 private:
     /// @brief is not in holder-thread
@@ -160,47 +139,24 @@ private:
     void HandlePendingCallbacks();
 
 private:
+#ifdef MUDUO_USE_MEMPOOL
+    std::unique_ptr<base::MemoryPool> memPool_;  // Loop-level memory pool handle
+#endif
     const pthread_t threadId_;
     bool looping_;
     std::atomic_bool quit_ { false };
     bool eventHandling_;
-#ifdef MUDUO_USE_MEMPOOL
-    const std::shared_ptr<base::MemoryPool> memPool_;  // Loop-level memory pool handle
-    std::unique_ptr<Poller, base::deleter_t<Poller>> poller_;    // 组合
-    std::unique_ptr<TimerQueue, base::deleter_t<TimerQueue>> timerQueue_;
-#else
     std::unique_ptr<Poller> poller_;    // 组合
     std::unique_ptr<TimerQueue> timerQueue_;
-#endif
     ReceiveTimePoint_t receiveTimePoint_;
     ChannelList activeChannels_;
 
     /* cross-threads wait/notify helper */
-#ifdef MUDUO_USE_MEMPOOL
-    std::unique_ptr<Bridge, base::deleter_t<Bridge>> bridge_;
-#else
     std::unique_ptr<Bridge> bridge_;
-#endif
     std::mutex mtx_;    // for sync EventLoop::pendingCbsQueue_
     PendingCallbacksQueue pendingCbsQueue_;
     std::atomic_bool callingPendingCbs_;
 };
-
-#ifdef MUDUO_USE_MEMPOOL
-    /// Factory pattern
-    inline std::unique_ptr<EventLoop, base::deleter_t<EventLoop>> CreateEventLoop() {
-        return EventLoop::Create();
-    }
-
-    using EventLoopPtr = std::unique_ptr<EventLoop, base::deleter_t<EventLoop>>;
-#else
-    /// Factory pattern
-    inline std::unique_ptr<EventLoop> CreateEventLoop() {
-        return EventLoop::Create();
-    }
-
-    using EventLoopPtr = std::unique_ptr<EventLoop>;
-#endif
 
 } // namespace muduo 
 

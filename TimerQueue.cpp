@@ -184,13 +184,11 @@ private:
 TimerQueue::TimerQueue(EventLoop* owner)
     : owner_(owner)
 #ifdef MUDUO_USE_MEMPOOL
-    , watcher_(new (owner_->GetMemoryPool().get()) Watcher(this),
-                std::bind(&base::DestroyWithMemPool<Watcher>, std::placeholders::_1, owner_->GetMemoryPool().get()))
-    , heap_(std::make_unique<TimerMinHeap>(this))
+    , watcher_(new (owner_->GetMemoryPool()) Watcher(this))
 #else
     , watcher_(std::make_unique<Watcher>(this))
-    , heap_(std::make_unique<TimerMinHeap>(this))
 #endif
+    , heap_(std::make_unique<TimerMinHeap>(this))
     , nextTimerId_(0)
     , latestTime_(TimePoint_t::max())
 {

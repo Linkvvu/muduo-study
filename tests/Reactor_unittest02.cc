@@ -54,12 +54,12 @@ private:
 
 int main() {
     std::signal(SIGINT, [](int sig) { g_loop->Quit(); });
-    auto loop = muduo::CreateEventLoop();
-    g_loop = loop.get();
+    EventLoop loop;
+    g_loop = &loop;
     
     InetAddr listener_addr(8888);
     Test t(g_loop, listener_addr);
     t.start();
     
-    loop->Loop();
+    loop.Loop();
 }

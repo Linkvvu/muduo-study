@@ -1,7 +1,7 @@
 #if !defined(MUDUO_SOCKET_H)
 #define MUDUO_SOCKET_H
 
-#include <muduo/base/allocator/mem_pool.h>
+#include <muduo/base/allocator/Allocatable.h>
 
 namespace muduo {
 
@@ -9,7 +9,7 @@ class InetAddr;     // forward declaration
 
 /// @brief socket wrapper, owning socket handle
 #ifdef MUDUO_USE_MEMPOOL
-class Socket final : public base::detail::ManagedByMempoolAble<Socket> {
+class Socket : public base::detail::Allocatable {
 #else
 class Socket {
 #endif

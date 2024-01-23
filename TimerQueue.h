@@ -1,7 +1,7 @@
 #if !defined(MUDUO_TIMER_QUEUE_H)
 #define MUDUO_TIMER_QUEUE_H
 
-#include <muduo/base/allocator/sgi_stl_alloc.h>
+#include <muduo/base/allocator/Allocatable.h>
 #include <muduo/TimerType.h>
 #include <chrono>
 #include <memory>
@@ -17,7 +17,7 @@ class Watcher;      // forward declaration
 class Timer;        // forward declaration
 
 #ifdef MUDUO_USE_MEMPOOL
-class TimerQueue final : public base::detail::ManagedByMempoolAble<TimerQueue> {
+class TimerQueue : public base::detail::Allocatable {
 #else
 class TimerQueue {
 #endif
@@ -55,13 +55,8 @@ private:
 
 private:
     EventLoop* const owner_;
-#ifdef MUDUO_USE_MEMPOOL
-    std::unique_ptr<Watcher, base::deleter_t<Watcher>> watcher_;
-    std::unique_ptr<TimerMinHeap> heap_;
-#else
     std::unique_ptr<Watcher> watcher_;
     std::unique_ptr<TimerMinHeap> heap_;
-#endif
     TimerId_t nextTimerId_;
     TimePoint_t latestTime_;
 };

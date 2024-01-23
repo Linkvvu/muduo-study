@@ -45,12 +45,12 @@ private:
 
 
 int main() {
-    auto u_loop_ptr = CreateEventLoop();
-    g_loop = u_loop_ptr.get();
+    EventLoop loop;
+    g_loop = &loop;
     
     InetAddr listener_addr(8888);
     Test t(g_loop, listener_addr);
     t.start();
     
-    u_loop_ptr->Loop();
+    loop.Loop();
 }

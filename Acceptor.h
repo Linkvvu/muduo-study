@@ -12,7 +12,7 @@ class Socket;       // forward declaration
 class Channel;      // forward declaration
 
 #ifdef MUDUO_USE_MEMPOOL
-class Acceptor final : public base::detail::ManagedByMempoolAble<Acceptor> {
+class Acceptor : public base::detail::Allocatable {
 #else
 class Acceptor {
 #endif
@@ -46,13 +46,8 @@ private:
 private:
     EventLoop* const owner_;
     InetAddr addr_;
-#ifdef MUDUO_USE_MEMPOOL
-    std::unique_ptr<Socket, base::deleter_t<Socket>> listener_;
-    std::unique_ptr<Channel, base::deleter_t<Channel>> channel_;
-#else
     std::unique_ptr<Socket> listener_;
     std::unique_ptr<Channel> channel_;
-#endif
     int idleFd_;    // file-descriptor holder
     // std::atomic_flag listening_;
     std::atomic_bool listening_;

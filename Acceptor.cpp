@@ -10,10 +10,8 @@ Acceptor::Acceptor(EventLoop* owner, const InetAddr& addr, bool reuse_port)
     : owner_(owner)
     , addr_(addr)
 #ifdef MUDUO_USE_MEMPOOL
-    , listener_(new (owner_->GetMemoryPool().get()) Socket(sockets::createNonblockingOrDie(addr.GetAddressFamily())),
-            std::bind(&base::DestroyWithMemPool<Socket>, std::placeholders::_1, owner_->GetMemoryPool().get()))
-    , channel_(new (owner_->GetMemoryPool().get()) Channel(owner_, listener_->FileDescriptor()),
-            std::bind(&base::DestroyWithMemPool<Channel>, std::placeholders::_1, owner_->GetMemoryPool().get()))
+    , listener_(new (owner_->GetMemoryPool()) Socket(sockets::createNonblockingOrDie(addr.GetAddressFamily())))
+    , channel_(new (owner_->GetMemoryPool()) Channel(owner_, listener_->FileDescriptor()))
 #else
     , listener_(std::make_unique<Socket>(sockets::createNonblockingOrDie(addr.GetAddressFamily())))
     , channel_(std::make_unique<Channel>(owner_, listener_->FileDescriptor()))
@@ -28,7 +26,6 @@ Acceptor::Acceptor(EventLoop* owner, const InetAddr& addr, bool reuse_port)
 }
 
 Acceptor::~Acceptor() noexcept {
-    assert(owner_->IsInLoopThread());
     if (listening_) {
         channel_->disableAllEvents();
         channel_->Remove();

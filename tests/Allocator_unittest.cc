@@ -1,7 +1,7 @@
-#include <muduo/base/allocator/sgi_stl_construct.h>
 #include <muduo/base/allocator/sgi_stl_alloc.h>
-#include <muduo/base/allocator/mem_pool.h>
+#include <muduo/EventLoop.h>
 #include <vector>
+#include <memory>
 #include <iostream>
 
 #define NUM 1000
@@ -9,7 +9,9 @@
 using namespace muduo;
 
 int main() {
-    base::allocator<int> alloc = base::allocator<int>(std::make_shared<base::MemoryPool>());
+    EventLoop loop;
+    auto pool = std::make_shared<base::MemoryPool>(&loop);
+    base::allocator<int> alloc = base::allocator<int>(pool.get());
     auto vec = new std::vector<int, muduo::base::allocator<int>>(alloc);
     
     for (int i = 0; i < NUM; i++) {

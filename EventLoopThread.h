@@ -1,5 +1,6 @@
 #if !defined(MUDUO_EVENTLOOP_THREAD_H)
 #define MUDUO_EVENTLOOP_THREAD_H
+#include <muduo/base/allocator/Allocatable.h>
 #include <muduo/Callbacks.h>
 #include <mutex>
 #include <memory>
@@ -9,7 +10,11 @@
 
 namespace muduo {
 
+#ifdef MUDUO_USE_MEMPOOL
+class EventLoopThread : public base::detail::Allocatable {
+#else
 class EventLoopThread {
+#endif
     // non-copyable & non-moveable
     EventLoopThread(const EventLoopThread&) = delete;
     EventLoopThread operator=(const EventLoopThread&) = delete;

@@ -2,6 +2,8 @@
 #define MUDUO_BASE_ALLOCATOR_MEM_POOL_H
 
 #include <muduo/config.h>
+
+#ifdef MUDUO_USE_MEMPOOL
 #include <functional>
 #include <cassert>
 #include <cstdlib>
@@ -9,6 +11,9 @@
 #include <new>
 
 namespace muduo {
+
+class EventLoop;    // forward declaration
+
 namespace base {
 namespace detail {
 
@@ -57,6 +62,7 @@ void* malloc_alloc<unused>::oom_malloc(size_t n) {
         }
 
         handler();
+
         result = ::malloc(n);
         if (result) {
             return result;
@@ -65,6 +71,7 @@ void* malloc_alloc<unused>::oom_malloc(size_t n) {
 }
 
 /// Instantiate class template @c malloc_alloc
+template class malloc_alloc<0>; 
 using master_alloc = malloc_alloc<0>;
 
 /* ======================================================================================== */
@@ -89,6 +96,8 @@ public:
 
     static_assert(kMax_Bytes % kALIGN == 0, "mem_pool::kMaxBytes must be a multiple of mem_pool::kALIGN");
 
+    static mem_pool* GetCurrentThreadMempool();
+
 private:
     /// 将 @c bytes 上调至 @c kALIGN 的倍数 
     static size_t ROUND_UP(size_t bytes)
@@ -99,49 +108,14 @@ private:
     { return (((bytes) + kALIGN-1) / kALIGN - 1); }
 
 public:
-    mem_pool() = default;
+    mem_pool(EventLoop* loop);
 
-    void* allocate(size_t n) {
-        if (n > static_cast<size_t>(kMax_Bytes)) {
-            return detail::master_alloc::allocate(n);
-        }
+    void* allocate(size_t n);
 
-        list_header_t target_list = nullptr;
-        obj* result;
-
-        target_list = free_lists + GET_FREELIST_INDEX(n);    // Get target list
-        result = *target_list;
-         
-        if (result == nullptr) {    // The list has`t available space
-            void* r = refill(ROUND_UP(n));
-            return r;
-        }
-
-        *target_list = result->next;  // Adjust current list 
-        return result;
-    }
-
-    void deallocate(void* ptr, size_t n) {
-        if (n > static_cast<size_t>(kMax_Bytes)) {
-            detail::master_alloc::deallocate(ptr, n);
-            return;
-        }
-
-        obj* recycle = static_cast<obj*>(ptr);
-        list_header_t target_list = nullptr;
-
-        target_list = free_lists + GET_FREELIST_INDEX(n);
-        recycle->next = *target_list;
-        *target_list = recycle;
-    }
+    void deallocate(void* ptr, size_t n);
 
     /// 向操作系统归还已分配的内存区域
-    ~mem_pool() noexcept {
-        for (void* p : allocated_area) {
-            ::free(p);
-        }
-        allocated_area.clear();
-    }
+    ~mem_pool() noexcept;
 
 private:
     /// @brief allocate a chunk that can accommodate @c n_objs @c sub_alloc<unused>::obj of size @c size.
@@ -157,6 +131,7 @@ private:
 private:
     using list_header_t = obj* volatile *; 
 
+    EventLoop* loop_;
     obj* volatile free_lists[kFreeListsNum] {};
     char* begin_free {nullptr};
     char* end_free {nullptr};
@@ -169,51 +144,13 @@ private:
 
 using MemoryPool = detail::mem_pool;
 
-/// @brief 由内存池构造的实例的"删除器"类型, 为适配于智能指针
-template <typename T>
-using deleter_t = std::function<void(T* p)>; 
-
-/**
- * @brief Destroy the instance and deallocate the storage pointed by @c p
- * @tparam T Type of the instance whose is allocated from memory pool
- * @tparam Base The base class of T, if existing.
-*/
-template <typename T, typename Base = T>
-void DestroyWithMemPool(Base* p, MemoryPool* pool) {
-    p->~Base();                     // destroy the instance
-    pool->deallocate(p, sizeof(T)); // deallocate
-};
-
-namespace detail {
-
-/// @brief CRTP, Enable the class @c Derive to be allocated from the memory pool
-template <typename Derive>
-class ManagedByMempoolAble {
-public:
-    /// @brief Use @c muduo::base::MemoryPool to allocate storage 
-    /// @note The method will hide the global operator new for this class
-    static void* operator new(size_t size, base::MemoryPool* pool) {
-        return pool->allocate(size);
-    }
-
-    /// @brief The method corresponds to @c operator new(size_t size, base::MemoryPool* pool),
-    /// Only will be invoked When the key @c new throws a exception by C++ Runtime System
-    /// @note The method will hide the global operator delete for this class
-    static void operator delete(void* p, base::MemoryPool* pool) {
-        pool->deallocate(p, sizeof(Derive));
-    }
-
-    // /// Explicitly declare @c Derive::operator new(), uses the global new operator
-    // static void* operator new(size_t size)
-    // { return ::operator new(size); }
-
-    // /// Explicitly declare @c Derive::operator delete(), uses the global delete operator
-    // static void operator delete(void* p)
-    // { ::operator delete(p); }
-};
-
-} // namespace detail 
 } // namespace base 
-} // namespace muduo 
+} // namespace muduo
+
+namespace {
+    /// thread-local-data, Loop-level memory pool
+    extern thread_local muduo::base::MemoryPool* tl_mempool_inThisThread;
+} // namespace 
+#endif
 
 #endif // MUDUO_BASE_ALLOCATOR_MEM_POOL_H

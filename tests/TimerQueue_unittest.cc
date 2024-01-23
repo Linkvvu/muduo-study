@@ -44,22 +44,22 @@ int main() {
     printTid();
     sleep(1);
     {
-        auto loop = muduo::CreateEventLoop();
-        g_loop = loop.get();
+        EventLoop loop;
+        g_loop = &loop;
 
         print("main");
-        loop->RunAfter(seconds(1), std::bind(print, "once1"));
-        loop->RunAfter(seconds(1)+milliseconds(500), std::bind(print, "once1.5"));
-        loop->RunAfter(seconds(2)+milliseconds(500), std::bind(print, "once2.5"));
-        loop->RunAfter(seconds(3)+milliseconds(500), std::bind(print, "once3.5"));
-        TimerId_t t45 = loop->RunAfter(seconds(4)+milliseconds(500), std::bind(print, "once4.5"));
-        loop->RunAfter(seconds(4)+milliseconds(200), std::bind(cancel, t45));
-        loop->RunAfter(seconds(4)+milliseconds(800), std::bind(cancel, t45));
-        loop->RunEvery(seconds(2), std::bind(print, "every2"));
-        TimerId_t t3 = loop->RunEvery(seconds(3), std::bind(print, "every3"));
-        loop->RunAfter(seconds(9)+milliseconds(1), std::bind(cancel, t3));
+        loop.RunAfter(seconds(1), std::bind(print, "once1"));
+        loop.RunAfter(seconds(1)+milliseconds(500), std::bind(print, "once1.5"));
+        loop.RunAfter(seconds(2)+milliseconds(500), std::bind(print, "once2.5"));
+        loop.RunAfter(seconds(3)+milliseconds(500), std::bind(print, "once3.5"));
+        TimerId_t t45 = loop.RunAfter(seconds(4)+milliseconds(500), std::bind(print, "once4.5"));
+        loop.RunAfter(seconds(4)+milliseconds(200), std::bind(cancel, t45));
+        loop.RunAfter(seconds(4)+milliseconds(800), std::bind(cancel, t45));
+        loop.RunEvery(seconds(2), std::bind(print, "every2"));
+        TimerId_t t3 = loop.RunEvery(seconds(3), std::bind(print, "every3"));
+        loop.RunAfter(seconds(9)+milliseconds(1), std::bind(cancel, t3));
 
-        loop->Loop();
+        loop.Loop();
         print("main loop exits");
     }
 }
