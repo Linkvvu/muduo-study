@@ -99,7 +99,11 @@ void muduo::detail::PollPoller::FillActiveChannels(int numReadyEvents, ChannelLi
             Channel* current_target_channel = target_pair->second;
             assert(target_pair->first == current_target_channel->FileDescriptor());
             current_target_channel->Set_REvent(c_it->revents);
+#ifdef MUDUO_USE_MEMPOOL
+            activeChannels->push_front(current_target_channel);
+#else
             activeChannels->push_back(current_target_channel);
+#endif
         }
     }
 }

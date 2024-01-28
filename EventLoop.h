@@ -8,6 +8,7 @@
 #include <mutex>
 #include <atomic>
 #include <thread>
+#include <forward_list>
 #include <vector>
 #include <memory>
 #include <cassert>
@@ -40,7 +41,7 @@ class EventLoop {
     
 #ifdef MUDUO_USE_MEMPOOL
 public:
-    using ChannelList = std::vector<Channel*, base::allocator<Channel*>>;
+    using ChannelList = std::forward_list<Channel*, base::allocator<Channel*>>;
 #else
 public:
     using ChannelList = std::vector<Channel*>;

@@ -22,12 +22,12 @@ static inline Logger::LogLevel initLogLevel() {
 
 const char* LevelName[] =
 {
-    "[TRACE]   ",
-    "[DEBUG]   ",
-    "[INFO]    ",
-    "[WARNING] ",
-    "[ERROR]   ",
-    "[FATAL]   "
+    "[TRACE] ",
+    "[DEBUG] ",
+    "[INFO ] ",
+    "[WARN ] ",
+    "[ERROR] ",
+    "[FATAL] "
 };
 
 #define L_RESET         "\033[0m"
@@ -43,12 +43,12 @@ const char* LevelName[] =
 
 const char* LevelNameWithColor[] =
 {
-    L_LIGHT_CYAN "[TRACE]   " L_RESET,
-    L_PINK "[DEBUG]   " L_RESET,
-    L_BLUE "[INFO]    " L_RESET,
-    L_LIGHT_YELLOW "[WARNING] " L_RESET,
-    L_RED "[ERROR]   " L_RESET,
-    L_RED "[FATAL]   " L_RESET
+    L_LIGHT_CYAN "[TRACE] " L_RESET,
+    L_PINK "[DEBUG] " L_RESET,
+    L_BLUE "[INFO ] " L_RESET,
+    L_LIGHT_YELLOW "[WARN ] " L_RESET,
+    L_RED "[ERROR] " L_RESET,
+    L_RED "[FATAL] " L_RESET
 };
 
 } // namespace muduo::base::detail 

@@ -13,31 +13,12 @@ TcpConnection::TcpConnection(EventLoop* owner, const std::string& name, int sock
     , name_(name)
     , localAddr_(local_addr)
     , remoteAddr_(remote_addr)
-// #ifdef MUDUO_USE_MEMPOOL
-//     , socket_(new (loop_->GetMemoryPool()) Socket(sockfd),
-//         [this](Socket* obj) {
-//             obj->~Socket();
-//             this->loop_->RunInEventLoop([this, ptr = obj]() {
-//                 // when the program exits, it's fine that even if the callback is lost,
-//                 // because All the chunks will be freed when the mempool destroyed
-//                 this->loop_->GetMemoryPool()->deallocate(ptr, sizeof (Socket));
-//             });
-//         })
-//     , chan_(new (loop_->GetMemoryPool()) Channel(loop_, sockfd),
-//         [this](Channel* obj) {
-//             obj->~Channel();
-//             this->loop_->RunInEventLoop([this, ptr = obj]() {
-//                 this->loop_->GetMemoryPool()->deallocate(ptr, sizeof (Channel));
-//             });
-//         })
-// #else
     , socket_(::new Socket(sockfd), [](Socket* s) {
         ::delete s;
     })
     , chan_(::new Channel(owner, sockfd), [](Channel* c) {
         ::delete c;
     }) 
-// #endif
     , inputBuffer_()
     , outputBuffer_()
 {
@@ -72,9 +53,8 @@ void TcpConnection::StepIntoDestroyed() {
     if (state_.compare_exchange_strong(expect, disconnected)) { // CAS
         chan_->disableAllEvents();
     } 
-    // else if (expect == disconnecting) {   // when TcpServer is destroyed And the state of sockfd is disconnecting
-    //     chan_->disableAllEvents();
-    // }
+    /// FIXME: When @c TcpServer instance is destroyed And the state of the @c TcpConnection is disconnecting
+    ///        might abort in the function @c Channel::Remove
     connectionCb_(shared_from_this());
     chan_->Remove();
 }
@@ -125,7 +105,7 @@ void TcpConnection::HandleWrite() {
                 }
             }
         } else {
-            LOG_SYSERR << "TcpConnection::handleWrite";
+            LOG_SYSERR << "TcpConnection::HandleWrite";
             // The peer responds so slowly.
             // whether shutdown the connection directly ?
             // if (state_ == kDisconnecting)
@@ -134,7 +114,8 @@ void TcpConnection::HandleWrite() {
             // }
         }
     } else {
-        LOG_TRACE << "Connection fd = " << chan_->FileDescriptor()
+        LOG_TRACE << "Connection fd=" << chan_->FileDescriptor() 
+                << ", connection[" << GetName() << "] "
                 << " is down, no more writing";
     }
 }

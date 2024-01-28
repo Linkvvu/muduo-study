@@ -58,7 +58,7 @@ public:
     base::LogStream& GetStream()
     { return impl_.stream_; }
 
-    static void SetOutputHandler(Logger::OutputHandler handler, bool escape = true);
+    static void SetOutputHandler(Logger::OutputHandler handler, bool color = true);
     static void SetFlushHandler(Logger::FlushHandler handler);
     
 private:
