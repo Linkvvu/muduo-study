@@ -23,6 +23,8 @@ using MessageCallback_t = std::function<void(const TcpConnectionPtr& conn, Buffe
 using HighWaterMarkCallback_t = std::function<void (const TcpConnectionPtr&, size_t)>;
 using WriteCompleteCallback_t = std::function<void (const TcpConnectionPtr&)>;
 
+void DefaultConnectionCallback(const TcpConnectionPtr& conn);
+void DefaultMessageCallback(const TcpConnectionPtr& conn, Buffer* buf, ReceiveTimePoint_t);
 } // namespace muduo 
 
 #endif // MUDUO_CALLBACKS_H

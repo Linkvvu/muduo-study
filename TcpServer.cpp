@@ -73,12 +73,12 @@ void TcpServer::HandleNewConnection(int connfd, const InetAddr& remote_addr) {
     // the TcpConnection instance be allocated from memory pool of master-reactor,
     // so it must be deallocated in the thread where the master-reactor is located
     new_conn_ptr = std::shared_ptr<muduo::TcpConnection>(new (loop_->GetMemoryPool()) TcpConnection(next_loop, new_conn_name, connfd, local_addr, remote_addr),
-        [this](TcpConnection* conn) {
+        [main_loop = loop_](TcpConnection* conn) {
             // destroys the connection instance
             conn->~TcpConnection();
             // thread-safely deallocate the storage
-            this->loop_->RunInEventLoop([this, ptr = conn]() {
-                this->loop_->GetMemoryPool()->deallocate(ptr, sizeof(TcpConnection));
+            main_loop->RunInEventLoop([main_loop, ptr = conn]() {
+                main_loop->GetMemoryPool()->deallocate(ptr, sizeof(TcpConnection));
             });
         });
 #else
@@ -115,7 +115,7 @@ void TcpServer::ListenAndServe() {
         // start io-threads   
         loop_->RunInEventLoop(std::bind(&EventLoopThreadPool::BuildAndRun, ioThreadPool_.get()));
 
-        // start listenting
+        // start listening
         loop_->RunInEventLoop(std::bind(&Acceptor::Listen, acceptor_.get()));
     }
 }

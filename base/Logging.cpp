@@ -113,7 +113,7 @@ Logger::LoggerImpl::LoggerImpl(LogLevel level, int line, const SourceFile& file,
     FormatCurTime();
     FormatTid();
     if (error_num != 0) {
-        stream_ << strerror_thread_safe(error_num) << " (errno=" << error_num << ") ";
+        stream_ << strerror_thread_safe(error_num) << " (errno=" << error_num << ") - ";
     }
 }
 

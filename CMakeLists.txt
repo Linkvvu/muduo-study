@@ -10,7 +10,7 @@ message(STATUS "Current BUILD_TYPE=${CMAKE_BUILD_TYPE}")
 
 if(CMAKE_PROJECT_NAME STREQUAL "muduo")
   option(MUDUO_USE_MEMPOOL "Enable memory pool" ON)
-  option(MUDUO_UNIT_TESTS "Build unit-tests of muduo" OFF)
+  option(MUDUO_UNIT_TESTS "Build unit-tests of muduo" ON)
 endif()
 
 if(MUDUO_USE_MEMPOOL)
@@ -72,6 +72,8 @@ set(
     Acceptor.cpp
     TcpServer.cpp
     Buffer.cpp
+    Connector.cpp
+    TcpClient.cpp
     base/LogStream.cpp
     base/Logging.cpp
     base/LogFile.cpp
@@ -109,6 +111,7 @@ set(
   TcpConnection.h
   TcpServer.h
   TimerType.h
+  TcpClient.h
   ${CMAKE_BINARY_DIR}/${CMAKE_INSTALL_INCLUDEDIR}/muduo/config.h
 )
 
@@ -120,8 +123,6 @@ set(
   base/Logging.h
   base/LogStream.h
   base/ThreadPool.h
-  base/allocator/mem_pool.h
-  base/allocator/sgi_stl_alloc.h
 )
 
 set(

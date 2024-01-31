@@ -8,6 +8,17 @@
 
 using namespace muduo;
 
+void muduo::DefaultConnectionCallback(const TcpConnectionPtr& conn) {
+    LOG_TRACE << conn->GetLocalAddr().GetIpPort() << " -> "
+        << conn->GetRemoteAddr().GetIpPort() << " is "
+        << (conn->IsConnected() ? "UP" : "DOWN");
+}
+
+void muduo::DefaultMessageCallback(const TcpConnectionPtr& conn, Buffer* buf, ReceiveTimePoint_t) {
+    LOG_TRACE << "connection[" << conn->GetName() << "] received message: " << buf->RetrieveAllAsString();
+}
+
+
 TcpConnection::TcpConnection(EventLoop* owner, const std::string& name, int sockfd, const InetAddr& local_addr, const InetAddr& remote_addr)
     : loop_(owner)
     , name_(name)

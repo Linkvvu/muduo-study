@@ -72,8 +72,8 @@ private:
     std::atomic_bool serving_ {false};
 
     /* Callbacks for custom logic */
-    ConnectionCallback_t connectionCb_ {nullptr};
-    MessageCallback_t messageCb_ {nullptr};
+    ConnectionCallback_t connectionCb_ {DefaultConnectionCallback};
+    MessageCallback_t messageCb_ {DefaultMessageCallback};
     WriteCompleteCallback_t writeCompleteCb_ {nullptr};
     /* always in loop-thread */
     uint64_t nextConnID_ {0};

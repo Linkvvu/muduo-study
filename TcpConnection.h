@@ -5,6 +5,7 @@
 #include <muduo/Buffer.h>
 #include <muduo/InetAddr.h>
 #include <muduo/TcpServer.h>  // for declare friend
+#include <muduo/TcpClient.h>  // for declare friend
 #include <muduo/Callbacks.h>
 #include <functional>
 #include <memory>
@@ -16,6 +17,7 @@ namespace muduo {
 class EventLoop;        // forward declaration
 class Channel;
 class Socket;
+class TcpClient;
 
 class TcpConnection : public std::enable_shared_from_this<TcpConnection>
 #ifdef MUDUO_USE_MEMPOOL
@@ -26,6 +28,9 @@ class TcpConnection : public std::enable_shared_from_this<TcpConnection>
     friend void TcpServer::HandleNewConnection(int connfd, const InetAddr& remote_addr);
     friend void TcpServer::RemoveConnectionInLoop(const TcpConnectionPtr& conn);
     friend TcpServer::~TcpServer() noexcept;
+    friend void TcpClient::HandleRemoveConnection(const TcpConnectionPtr& conn);
+    friend void TcpClient::HandleConnectSuccessfully(int sockfd);
+    friend TcpClient::~TcpClient() noexcept;
 
     /* non-copyable and non-moveable*/
     TcpConnection(const TcpConnection&) = delete;

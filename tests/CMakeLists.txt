@@ -49,3 +49,12 @@ endif(MUDUO_USE_MEMPOOL)
 
 add_executable(LoopWithMemPool LoopWithMemPool.cc)
 target_link_libraries(LoopWithMemPool muduoNet)
+
+add_executable(TcpClient_unittest01 TcpClient_unittest01.cc)
+target_link_libraries(TcpClient_unittest01 muduoNet)
+
+add_executable(TcpClient_unittest02 TcpClient_unittest02.cc)
+target_link_libraries(TcpClient_unittest02 muduoNet)
+
+add_executable(TcpClient_unittest03 TcpClient_unittest03.cc)
+target_link_libraries(TcpClient_unittest03 muduoNet)

@@ -42,7 +42,7 @@ void Channel::HandleEventsWithGuard(ReceiveTimePoint_t receiveTime) {
     // for example: 当socket的读和写端都被关闭，但却没有关闭该socket，则poll时POLLHUP事件会被返回
     if ((revents_ & POLLHUP) && !(revents_ & POLLIN)) {
         if (logHup_) {
-            LOG_WARN << "fd=" << fd_ << " Channel::handle_event() POLLHUP";
+            LOG_WARN << "fd=" << fd_ << " Channel::HandleEvents - POLLHUP";
         }
         if (closeCb_) {
             closeCb_();
@@ -51,7 +51,7 @@ void Channel::HandleEventsWithGuard(ReceiveTimePoint_t receiveTime) {
 
     // POLLNVAL: When the file descriptor is closed or never opened
     if (revents_ & POLLNVAL) {
-        LOG_WARN << "fd=" << fd_ << " Channel::handle_event() POLLNVAL";
+        LOG_WARN << "fd=" << fd_ << " Channel::HandleEvents - POLLNVAL";
     }
 
     // POLLERR: When the fd has a async-error
