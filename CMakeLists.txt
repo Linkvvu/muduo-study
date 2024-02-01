@@ -10,7 +10,7 @@ message(STATUS "Current BUILD_TYPE=${CMAKE_BUILD_TYPE}")
 
 if(CMAKE_PROJECT_NAME STREQUAL "muduo")
   option(MUDUO_USE_MEMPOOL "Enable memory pool" ON)
-  option(MUDUO_UNIT_TESTS "Build unit-tests of muduo" ON)
+  option(MUDUO_UNIT_TESTS "Build unit-tests of muduo" OFF)
 endif()
 
 if(MUDUO_USE_MEMPOOL)

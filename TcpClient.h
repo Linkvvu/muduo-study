@@ -15,7 +15,7 @@ using TcpConnectionPtr = std::shared_ptr<TcpConnection>;
 using TcpClientPtr = std::shared_ptr<TcpClient>;
 
 /// @brief Factory method, create a tcp-client instance
-TcpClientPtr CreateTcpClient(EventLoop* loop, const InetAddr& server_addr, std::string name);
+extern TcpClientPtr CreateTcpClient(EventLoop* loop, const InetAddr& server_addr, std::string name);
 
 /// Must be managed by @c std::shared_ptr
 class TcpClient : public std::enable_shared_from_this<TcpClient> {
@@ -26,6 +26,7 @@ class TcpClient : public std::enable_shared_from_this<TcpClient> {
     explicit TcpClient(EventLoop* loop, const InetAddr& server_addr, std::string name);
 
 public:
+    /// @note When the TcpClient instance destroyed, the connection will also be closed
     ~TcpClient();
 
     /// @brief Starts to connect the specified server
@@ -74,10 +75,6 @@ private:
     MessageCallback_t onMessageCb_ {DefaultMessageCallback};
     WriteCompleteCallback_t writeCompleteCb_ {nullptr};
 };
-
-inline TcpClientPtr CreateTcpClient(EventLoop* loop, const InetAddr& server_addr, std::string name) {
-    return std::shared_ptr<TcpClient>(new TcpClient(loop, server_addr, std::move(name)));
-}
 
 } // namespace muduo 
 

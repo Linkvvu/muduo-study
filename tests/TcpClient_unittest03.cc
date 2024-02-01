@@ -13,7 +13,6 @@ int main() {
         client->Connect();
         std::this_thread::sleep_for(milliseconds(500));
         client->Shutdown();
-        std::this_thread::sleep_for(milliseconds(200)); // for wait FIN net-pack of peer 
     }
     std::this_thread::sleep_for(seconds(1));
 }

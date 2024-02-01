@@ -6,6 +6,25 @@
 
 using namespace muduo;
 
+TcpClientPtr muduo::CreateTcpClient(EventLoop* loop, const InetAddr& server_addr, std::string name) {
+    TcpClientPtr client = std::shared_ptr<TcpClient>(new TcpClient(loop, server_addr, std::move(name)));
+
+    // saves a weak-ptr to prevent accessing the destroyed TcpClient instance
+    client->connector_->SetConnectSuccessfullyCallback([weak = client->weak_from_this()](int sockfd) {
+        std::shared_ptr<TcpClient> client = weak.lock();    // as guard to prevent the client instance destroying now
+        if (client) {
+            // the target client isn't destroyed, invoke callback
+            client->HandleConnectSuccessfully(sockfd);
+        } else {    
+            // the target client was destroyed, close the connected native connection
+            sockets::close(sockfd);
+            LOG_WARN << "the client was destroyed, no longer connect";
+        }
+    });
+
+    return client;
+}
+
 TcpClient::TcpClient(EventLoop* loop, const InetAddr& server_addr, std::string name)
     : loop_(loop)
     , connector_(std::make_unique<Connector>(loop_, server_addr))
@@ -22,42 +41,29 @@ TcpClient::~TcpClient() {
     LOG_DEBUG << "TcpClient::TcpClient[" << clientName_
             << "] - connector " << connector_.get();
     
+    TcpConnectionPtr conn;
     {
         std::lock_guard<std::mutex> guard(mutex_);
-        if (connection_.unique()) { 
-            // if the connection is unique, then it will be destroyed immediately,
-            // should invoke TcpConnection::StepIntoDestroyed to prepare destruction 
-            connection_->GetEventLoop()->EnqueueEventLoop(
-                [conn = connection_]() {
-                    // force close, as if read 0 bytes
-                    if (conn->state_ == TcpConnection::connected || conn->state_ == TcpConnection::connecting)
-                        conn->HandleClose();
-                }
-            );
-        }
-
-        if (!connection_) {
-            connector_->Stop();
-        }
+        conn = connection_;
     }
 
+    if (conn) { 
+        // should invoke TcpConnection::StepIntoDestroyed to prepare for the impending destruction
+        conn->GetEventLoop()->EnqueueEventLoop(
+            [conn]() {
+                // force close, as if read 0 bytes
+                if (conn->state_ == TcpConnection::connected || conn->state_ == TcpConnection::connecting)
+                    conn->HandleClose();
+            }
+        );
+    } else {
+        // no longer attempt to connect, if the client start
+        this->Stop();
+    }
 }
 
 void TcpClient::Connect() {
     doConnect_.store(true, std::memory_order::memory_order_release);
-    
-    connector_->SetConnectSuccessfullyCallback([weak = weak_from_this()](int sockfd) {
-        std::shared_ptr<TcpClient> client = weak.lock();
-        if (client) {
-            // the target client isn't destroyed 
-            client->HandleConnectSuccessfully(sockfd);
-        } else {    
-            // the target client was destroyed
-            sockets::close(sockfd); // close the connected connection
-            LOG_WARN << "the client was destroyed, no longer connect";
-        }
-    });
-
     connector_->Start();
 }
 
