@@ -38,8 +38,11 @@ public:
     /// @brief Stops to connect the specified server if is attempting to connect
     void Stop();
 
-    TcpConnectionPtr GetConnection() const
+    const TcpConnectionPtr& GetConnection() const
     { return connection_; }
+
+    const std::string& GetName() const
+    { return clientName_; }
 
     EventLoop* GetEventLoop()
     { return loop_; }

@@ -1,7 +1,9 @@
 #include <muduo/TimerQueue.h>
 #include <muduo/Timer.h>
-#include <cstring>
 #include <memory>
+#include <cstring>
+#include <cassert>
+#include <algorithm>
 #include <sys/timerfd.h>
 
 using namespace muduo;
@@ -14,12 +16,12 @@ class TimerQueue::TimerMinHeap {
 #ifdef MUDUO_USE_MEMPOOL
 private:
     using TimerList = std::vector<std::unique_ptr<Timer>, base::allocator<std::unique_ptr<Timer>>>;
-    /// The index in @c TimerList of Timer, key=TimerId_t value=index
-    using TimerMap = std::unordered_map<TimerId_t, std::size_t, std::hash<TimerId_t>, std::equal_to<TimerId_t>, base::allocator<std::pair<const TimerId_t, size_t>>>;
+    /// The index in @c TimerList of Timer, key=detail::TimerId_t value=index
+    using TimerMap = std::unordered_map<detail::TimerId_t, std::size_t, std::hash<detail::TimerId_t>, std::equal_to<detail::TimerId_t>, base::allocator<std::pair<const detail::TimerId_t, size_t>>>;
 #else
 private:
     using TimerList = std::vector<std::unique_ptr<Timer>>;
-    using TimerMap = std::unordered_map<TimerId_t, std::size_t>;
+    using TimerMap = std::unordered_map<detail::TimerId_t, std::size_t>;
 #endif
 
 public:
@@ -35,7 +37,7 @@ public:
      * @return Whether need update timerfd expiration-TimePoint
     */
     bool Add(std::unique_ptr<Timer>&& t_p) {
-        TimerId_t id = t_p->GetId();
+        detail::TimerId_t id = t_p->GetId();
         std::size_t idx = timerList_.size();
         timerList_.push_back(std::move(t_p));
         positions_[id] = idx;
@@ -63,7 +65,7 @@ public:
         return false;
     }
 
-    bool Del(const TimerId_t id) {
+    bool Del(const detail::TimerId_t id) {
         std::size_t idx = -1;   // unsigned LONG maximum
         try {
             idx = positions_.at(id);
@@ -73,20 +75,24 @@ public:
         }
 
         if (idx == 0) {
-            Pop();
+            this->Pop();
             return true;
         }
         
-        TimerId_t backTimer_id = timerList_.back()->GetId();
+        detail::TimerId_t backTimer_id = timerList_.back()->GetId();
         using namespace std;
+        // tips: the implementation of a standard swap checks the self-swap
         swap(timerList_[idx], timerList_.back());
         timerList_.pop_back();
         auto ret = positions_.erase(id);
         assert(ret == 1); (void)ret;
         assert(timerList_.size() == positions_.size());
-        // update position
-        positions_[backTimer_id] = idx;
-        Adjust(idx);
+
+        if (backTimer_id != id) {
+            // the specified timer is not in the timerList's back, update the new position and adjust the structure 
+            positions_[backTimer_id] = idx;
+            Adjust(idx);
+        }
         return false;
     }
 
@@ -111,6 +117,7 @@ public:
 
             if (candidate != cur_mid) {   // idx指向的定时器需要向下层调整
                 using namespace std;
+                // the implementation of a standard swap checks the self-swap
                 swap(timerList_[cur_mid], timerList_[candidate]);
                 // update positions
                 positions_[timerList_[candidate]->GetId()] = candidate;
@@ -128,18 +135,26 @@ public:
     /**
      * call by TimerQueue::GetExpiredTimers
     */
-    void PopMovedTimer(const TimerId_t id) {
+    void PopMovedTimer(const detail::TimerId_t id) {
         assert(!timerList_.empty());
-        
+
         if (timerList_.size() > 1) {
+            assert(positions_.find(id) != positions_.end());
+            size_t target_idx = positions_[id];
+            bool flag = timerList_.back()->GetId() != id;
+
             using namespace std;
-            swap(timerList_.front(), timerList_.back());
+            // tips: the implementation of a standard swap checks the self-swap
+            swap(timerList_[target_idx], timerList_.back());
             timerList_.pop_back();
             auto ret = positions_.erase(id);
             assert(ret == 1); (void)ret;
             assert(timerList_.size() == positions_.size());
-            positions_[timerList_.front()->GetId()] = 0;
-            Adjust(0);
+            if (flag) {
+                // the specified timer is not in the timerList's back, update the new position and adjust the structure 
+                positions_[timerList_[target_idx]->GetId()] = target_idx;
+                Adjust(target_idx);
+            }
         } else if (timerList_.size() == 1) {
             assert(positions_.size() == 1);
             timerList_.clear();
@@ -152,23 +167,7 @@ private:
      * call by TimerMinHeap::Del
     */
     void Pop() {
-        assert(!timerList_.empty());
-        
-        if (timerList_.size() > 1) {
-            using namespace std;
-            TimerId_t front_timer_id = timerList_.front()->GetId();
-            swap(timerList_.front(), timerList_.back());
-            timerList_.pop_back();
-            auto ret = positions_.erase(front_timer_id);
-            assert(ret == 1); (void)ret;
-            assert(timerList_.size() == positions_.size());
-            positions_[timerList_.front()->GetId()] = 0;
-            Adjust(0);
-        } else if (timerList_.size() == 1) {
-            assert(positions_.size() == 1);
-            timerList_.clear();
-            positions_.clear();
-        }
+        PopMovedTimer(timerList_.front()->GetId());
     }
 
 
@@ -197,10 +196,11 @@ TimerQueue::TimerQueue(EventLoop* owner)
 
 TimerQueue::~TimerQueue() noexcept = default;
 
-TimerId_t TimerQueue::AddTimer(const TimePoint_t& when, const Interval_t& interval, const TimeoutCb_t& cb)
+detail::TimerId_t TimerQueue::AddTimer(const TimePoint_t& when, const Interval_t& interval, const TimeoutCb_t& cb)
 {
     assert(when != TimePoint_t::max());
-    int cur_timer_id = nextTimerId_++;
+    // just need to ensuring the atomic
+    int cur_timer_id = nextTimerId_.fetch_add(1, std::memory_order::memory_order_relaxed);
     owner_->RunInEventLoop([=]() {  // Capture by value
         std::unique_ptr<Timer> t_p = std::make_unique<Timer>(when, interval, cb, cur_timer_id);
         this->AddTimerInLoop(t_p);
@@ -218,11 +218,11 @@ void TimerQueue::AddTimerInLoop(std::unique_ptr<Timer>& t_p) {
     }
 }
 
-void TimerQueue::CancelTimer(const TimerId_t id) {
+void TimerQueue::CancelTimer(const detail::TimerId_t id) {
     owner_->RunInEventLoop(std::bind(&TimerQueue::CancelTimerInLoop, this, id));
 }
 
-void TimerQueue::CancelTimerInLoop(const TimerId_t id) {
+void TimerQueue::CancelTimerInLoop(const detail::TimerId_t id) {
     owner_->AssertInLoopThread();
     bool latest_need_update = heap_->Del(id);
     if (latest_need_update) {

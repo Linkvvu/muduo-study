@@ -6,6 +6,7 @@
 #include <chrono>
 #include <memory>
 #include <vector>
+#include <atomic>
 #include <functional>
 #include <unordered_map>
 
@@ -21,6 +22,8 @@ class TimerQueue : public base::detail::Allocatable {
 #else
 class TimerQueue {
 #endif
+    using TimerId = std::atomic_int;
+    // static_assert(typeid(TimerQueue::TimerId::value_type) == typeid(detail::TimerId_t), "The type of timer-id must be the same");
 
     // non-copyable & non-moveable
     TimerQueue(const TimerQueue&) = delete;
@@ -35,8 +38,8 @@ public:
     /** 
      * thread-safe
     */
-    TimerId_t AddTimer(const TimePoint_t& when, const Interval_t& interval, const TimeoutCb_t& cb);
-    void CancelTimer(const TimerId_t id);
+    detail::TimerId_t AddTimer(const TimePoint_t& when, const Interval_t& interval, const TimeoutCb_t& cb);
+    void CancelTimer(const detail::TimerId_t id);
     
     /**
      * return the loop instance whose own the current channel
@@ -48,7 +51,7 @@ public:
 
 private:
     void AddTimerInLoop(std::unique_ptr<Timer>& t_p);
-    void CancelTimerInLoop(const TimerId_t id);
+    void CancelTimerInLoop(const detail::TimerId_t id);
     void ResetTimerfd();
     using ExpiredTimerList = std::vector<std::unique_ptr<Timer>>; 
     ExpiredTimerList GetExpiredTimers();
@@ -57,7 +60,7 @@ private:
     EventLoop* const owner_;
     std::unique_ptr<Watcher> watcher_;
     std::unique_ptr<TimerMinHeap> heap_;
-    TimerId_t nextTimerId_;
+    TimerId nextTimerId_;
     TimePoint_t latestTime_;
 };
 
