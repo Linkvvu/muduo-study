@@ -37,12 +37,18 @@ TcpConnection::TcpConnection(EventLoop* owner, const std::string& name, int sock
     chan_->SetWriteCallback(std::bind(&TcpConnection::HandleWrite, this));
     chan_->SetCloseCallback(std::bind(&TcpConnection::HandleClose, this));
     chan_->SetErrorCallback(std::bind(&TcpConnection::HandleError, this));
+
     LOG_DEBUG << "TcpConnection[" <<  name_ << "] is constructed at " << this << " fd=" << chan_->FileDescriptor();
+    SetKeepAlive(true);
 }
 
 TcpConnection::~TcpConnection() noexcept {
     LOG_DEBUG << "TcpConnection[" <<  name_ << "] is being destructed at " << this << " fd=" << chan_->FileDescriptor();
     assert(state_ == disconnected);
+}
+
+void muduo::TcpConnection::SetKeepAlive(bool on) {
+    socket_->SetKeepAlive(on);
 }
 
 void muduo::TcpConnection::SetTcpNoDelay(bool on) {

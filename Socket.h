@@ -29,6 +29,7 @@ public:
 
     void Listen();
     void BindInetAddr(const InetAddr& addr);
+    void SetKeepAlive(bool on);
     void SetReusePort(bool on);
     void SetReuseAddr(bool on);
     void SetTcpNoDelay(bool on);

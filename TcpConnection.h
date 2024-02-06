@@ -49,7 +49,8 @@ public:
     const std::string& GetName() const { return name_; }
 
     void SetTcpNoDelay(bool on);
-
+    void SetKeepAlive(bool on);
+    
     void SetContext(const std::any& ctx) { context_ = ctx; }
     const std::any& GetContext() const { return context_; }
     /// @brief Return mutable context
