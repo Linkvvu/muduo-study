@@ -28,7 +28,7 @@ bash build.sh
 * 采用「one loop per thread」线程模型 + non-blocking IO
 * 基于双缓冲区机制实现**异步日志**
 * 基于**优先队列**实现**定时器**管理结构
-* 遵行"RAII"思想，使用智能制造管理内存
+* 遵行"RAII"思想，使用智能指针管理内存
 * 参考"SGI STL-allocator"实现了**循环级内存池**
 * 支持select\\poll\\epoll 3种 IO-multiplexing
 
